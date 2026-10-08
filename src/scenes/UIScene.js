@@ -589,7 +589,7 @@ export default class UIScene extends Phaser.Scene {
     const puffs = [img(this, -118, -58, 'icon_puff').setScale(0.5 * 1.3), img(this, 122, -62, 'icon_zobo').setScale(0.5 * 1.4)];
     const t0 = label(this, 0, -52, 'ABA', { size: 30, color: '#ffe066', stroke: '#7a1a10', sw: 8, res: this.dpr * 1.5 });
     const t1 = label(this, 0, -8, 'Chop Spot', { size: 58, color: '#fff6e0', stroke: '#7a1a10', sw: 10, res: this.dpr * 1.5 });
-    const t2 = label(this, 0, 46, 'FROM FAULKS ROAD TO THE TOP', { size: 15, color: '#ffe066', stroke: '#7a1a10', sw: 5, res: this.dpr * 1.5 });
+    const t2 = label(this, 0, 46, 'Grow Your Restaurant', { size: 15, color: '#ffe066', stroke: '#7a1a10', sw: 5, res: this.dpr * 1.5 });
     logo.add([...puffs, t0, t1, t2]);
     c.add(logo);
     this.tweens.add({ targets: puffs[0], y: -68, angle: -8, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
@@ -609,7 +609,7 @@ export default class UIScene extends Phaser.Scene {
       this.tweens.add({ targets: c, alpha: 0, duration: 350, onComplete: () => { c.destroy(); this.titleC = null; } });
     };
     this.bigButton(btnC, 0, 0, returning ? 'CONTINUE' : 'PLAY', 0x2bb34a, start, 220);
-    btnC.add(label(this, 0, 52, 'Cook it. Serve it. Own Aba.', { size: 15, color: '#fff6e0', stroke: null, res: this.dpr * 1.5 }));
+    btnC.add(label(this, 0, 52, 'Grow your restaurant business', { size: 15, color: '#fff6e0', stroke: null, res: this.dpr * 1.5 }));
     hitAll.on('pointerdown', start);
     c.relayout = () => { draw(); logo.setPosition(this.W / 2, this.H * 0.36); btnC.setPosition(this.W / 2, this.H * 0.66); };
     c.relayout();
