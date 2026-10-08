@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Puff &amp; Zobo</string>
+    <string name="title_activity_main">Puff &amp; Zobo</string>
+    <string name="package_name">com.reevatech.puffzobo</string>
+    <string name="custom_url_scheme">com.reevatech.puffzobo</string>
+</resources>

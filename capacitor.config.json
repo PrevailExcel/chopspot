@@ -1,0 +1,7 @@
+{
+  "appId": "com.reevatech.puffzobo",
+  "appName": "Aba Chop Spot",
+  "webDir": "dist",
+  "android": { "backgroundColor": "#7cc35a" },
+  "plugins": {}
+}

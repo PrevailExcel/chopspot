@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#7cc35a" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2240%22 fill=%22%23e39a3a%22/%3E%3C/svg%3E" />
+  <title>Aba Chop Spot</title>
+  <meta name="description" content="Sell puff-puff and zobo on Faulks Road, build your buka at Ariaria Market, hire staff and own Aba. Free to play in your browser." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Aba Chop Spot" />
+  <meta property="og:description" content="Sell puff-puff &amp; zobo on Faulks Road. Build your buka at Ariaria. Own Aba. Play free in your browser." />
+  <meta property="og:image" content="__SITE_URL__/og.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:url" content="__SITE_URL__/" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="__SITE_URL__/og.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <style>
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #7cc35a;
+      touch-action: none; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; overscroll-behavior: none; }
+    #game { position: fixed; inset: 0; }
+    #game canvas { display: block; }
+    #boot { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+      font: 600 20px Fredoka, system-ui, sans-serif; color: #fff; background: #7cc35a; transition: opacity .3s; }
+  </style>
+</head>
+<body>
+  <div id="game"></div>
+  <div id="boot">Heating the oil…</div>
+  <div id="safe-probe" style="position:fixed;top:0;left:0;width:0;height:env(safe-area-inset-top);pointer-events:none"></div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

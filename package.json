@@ -1,0 +1,26 @@
+{
+  "name": "aba-chop-spot",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview --host",
+    "cap:add": "cap add android",
+    "cap:sync": "npm run build && cap sync",
+    "build:single": "vite build --mode single"
+  },
+  "dependencies": {
+    "@capacitor/core": "^6.1.2",
+    "@capacitor/haptics": "^6.0.1",
+    "@fontsource/fredoka": "^5.3.0",
+    "phaser": "^3.80.1"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/cli": "^6.1.2",
+    "vite": "^5.4.8",
+    "vite-plugin-singlefile": "^2.3.3"
+  }
+}
