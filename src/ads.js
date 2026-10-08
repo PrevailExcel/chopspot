@@ -150,6 +150,10 @@ export function trackAd(type, adId, slotId) {
   saveStats();
   if (TRACK_URL) { queue.push({ type, ad: adId, slot: slotId, t: Date.now() }); if (queue.length >= 20 || type === 'tap') flushAds(); }
 }
+/** Any other game event worth counting (install funnel etc.). Sent with the ad events when TRACK_URL is set. */
+export function trackEvent(type, data = {}) {
+  if (TRACK_URL) { queue.push({ type, ...data, t: Date.now() }); if (queue.length >= 20) flushAds(); }
+}
 export function flushAds() {
   if (!TRACK_URL || !queue.length) return;
   const body = JSON.stringify(queue); queue = [];

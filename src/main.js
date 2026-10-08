@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import '@fontsource/fredoka/latin-500.css';
 import '@fontsource/fredoka/latin-600.css';
 import '@fontsource/fredoka/latin-700.css';
+import './install.js'; // must load first to catch the browser's install prompt
 import BootScene from './scenes/BootScene.js';
 import StandScene from './scenes/StandScene.js';
 import BukaScene from './scenes/BukaScene.js';

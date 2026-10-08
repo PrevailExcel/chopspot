@@ -5,6 +5,7 @@ import { Sound } from '../audio.js';
 import { Haptic } from '../platform.js';
 import { Rig } from '../entities/Rig.js';
 import { SKIN_TONES, OUTFITS, HAIR, defaultProfile, lookFromProfile } from '../profile.js';
+import { Install, INSTALL_BONUS } from '../install.js';
 
 const JOY_R = 58;
 let titleDone = false; // the title screen shows once per app launch, not on every branch trip
@@ -55,6 +56,10 @@ export default class UIScene extends Phaser.Scene {
     on('rush-start', this.rushBanner);
     on('branches-changed', () => { if (this.modal && this.modal.kind === 'map') this.showMap(); });
     on('blur', () => Object.assign(this.joy, { id: null, active: false, x: 0, y: 0 }));
+    on('moment', this.onMoment);
+    on('profile-set', () => this.time.delayedCall(1500, () => this.game.events.emit('moment', 'start')));
+    const offInstall = Install.onChange(() => this.refreshInstallBtn());
+    this.events.once('shutdown', offInstall);
 
     this.scale.on('resize', this.layout, this);
     this.events.once('shutdown', () => this.scale.off('resize', this.layout, this));
@@ -83,6 +88,7 @@ export default class UIScene extends Phaser.Scene {
     this.gearBtn.setPosition(W - 32, top + 24);
     this.goalsBtn.setPosition(36, top + 82);
     this.mapBtn.setPosition(36, top + 136);
+    this.installBtn.setPosition(36, top + 190);
     this.hintC.setPosition(W / 2, top + 76);
     this.layoutRush();
     this.layoutMoveHint();
@@ -114,7 +120,14 @@ export default class UIScene extends Phaser.Scene {
     this.gearBtn = this.makeRoundButton('gear', () => this.showSettings());
     this.goalsBtn = this.makeRoundButton('icon_goals', () => this.showGoals());
     this.mapBtn = this.makeRoundButton('icon_map', () => this.showMap());
-    [this.gearBtn, this.goalsBtn, this.mapBtn].forEach((b) => b.setDepth(100));
+    this.installBtn = this.makeRoundButton('install', () => this.showInstall('button'));
+    [this.gearBtn, this.goalsBtn, this.mapBtn, this.installBtn].forEach((b) => b.setDepth(100));
+    // "+N1k" tag under the install button
+    const tag = this.add.container(0, 22);
+    const tg = this.add.graphics(); tg.fillStyle(0x2bb34a, 1); tg.fillRoundedRect(-22, -8, 44, 16, 8); tg.lineStyle(1.5, 0xffffff, 1); tg.strokeRoundedRect(-22, -8, 44, 16, 8);
+    tag.add([tg, label(this, 0, 0, `+${money(INSTALL_BONUS).replace(',000', 'k')}`, { size: 11, stroke: null, res: this.dpr * 1.5 })]);
+    this.installBtn.add(tag);
+    this.refreshInstallBtn();
     // red badge on the goals button
     this.badge = this.add.container(16, -16);
     const bg = this.add.graphics(); bg.fillStyle(0xe33d3d, 1); bg.fillCircle(0, 0, 10); bg.lineStyle(2, 0xffffff, 1); bg.strokeCircle(0, 0, 10);
@@ -137,6 +150,12 @@ export default class UIScene extends Phaser.Scene {
       for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4; gg.fillRoundedRect(Math.cos(a) * 9 - 3.5, Math.sin(a) * 9 - 3.5, 7, 7, 2); }
       gg.fillCircle(0, 0, 9); gg.fillStyle(0x2a3550, 1); gg.fillCircle(0, 0, 4);
       c.add(gg);
+    } else if (kind === 'install') {
+      const pg = this.add.graphics();
+      pg.lineStyle(2.5, 0xffffff, 1); pg.strokeRoundedRect(-7.5, -12, 15, 24, 3.5);
+      pg.fillStyle(0xffffff, 1); pg.fillRect(-2.5, 8, 5, 1.6);
+      pg.lineStyle(2.5, 0xffd23f, 1); pg.lineBetween(0, -7, 0, 2); pg.lineBetween(-3.5, -1, 0, 2.5); pg.lineBetween(3.5, -1, 0, 2.5);
+      c.add(pg);
     } else c.add(img(this, 0, 0, kind).setScale(0.5 * 0.56));
     c.setSize(r * 2, r * 2);
     c.setInteractive({ useHandCursor: true });
@@ -584,7 +603,9 @@ export default class UIScene extends Phaser.Scene {
       Sound.unlock();
       Haptic.tap('medium');
       this.scene.resume(this.registry.get('active'));
-      if (!this.gameScene.gs.profile) this.time.delayedCall(250, () => this.showCreator());
+      if (Install.claimBonus()) this.time.delayedCall(250, () => this.showInstallBonus());
+      else if (!this.gameScene.gs.profile) this.time.delayedCall(250, () => this.showCreator());
+      else this.time.delayedCall(1500, () => this.game.events.emit('moment', 'start'));
       this.tweens.add({ targets: c, alpha: 0, duration: 350, onComplete: () => { c.destroy(); this.titleC = null; } });
     };
     this.bigButton(btnC, 0, 0, returning ? 'CONTINUE' : 'PLAY', 0x2bb34a, start, 220);
@@ -638,7 +659,7 @@ export default class UIScene extends Phaser.Scene {
 
   showWelcome({ earn, minutes, branch, capped }) {
     if (this.titleOpen) { this.time.delayedCall(400, () => this.showWelcome({ earn, minutes, branch, capped })); return; }
-    this.openModal((card) => {
+    const m = this.openModal((card) => {
       const w = Math.min(320, this.W - 40), h = capped ? 330 : 300;
       this.card(card, w, h, 'Welcome back!', 0x7b2d8b);
       card.add(img(this, 0, -h / 2 + 108, 'icon_cash').setScale(0.5 * 1.1));
@@ -648,6 +669,7 @@ export default class UIScene extends Phaser.Scene {
       if (capped) card.add(this.txt(0, -h / 2 + 232, 'The cash box filled up! Upgrade it\nat the Upgrade Desk to hold more.', 12, 600, '#c0392b', { align: 'center' }).setOrigin(0.5));
       this.bigButton(card, 0, h / 2 - 46, 'Nice!', 0x2bb34a, () => this.closeModal(), 160);
     });
+    m.onClose = () => this.time.delayedCall(500, () => this.game.events.emit('moment', 'back'));
     Sound.play('cash');
   }
 
@@ -680,6 +702,138 @@ export default class UIScene extends Phaser.Scene {
     }).setDepth(400);
     this.time.delayedCall(3500, () => e.stop());
     this.time.delayedCall(8000, () => e.destroy());
+  }
+
+  // ---------- getting the game onto the home screen ----------
+  refreshInstallBtn() {
+    if (!this.installBtn) return;
+    const show = !!Install.mode;
+    this.installBtn.setVisible(show);
+    if (show && !this.installPulse) {
+      this.installPulse = this.tweens.add({ targets: this.installBtn, scale: 1.12, duration: 380, yoyo: true, repeat: 2, repeatDelay: 120, loop: -1, loopDelay: 9000 });
+    }
+  }
+
+  onMoment(moment) {
+    if (!Install.shouldAsk(moment)) return;
+    // wait for the current moment (confetti, a modal) to settle before asking
+    this.time.delayedCall(moment === 'start' ? 300 : 1400, () => {
+      if (this.modal || this.titleOpen || this.upPanel || !Install.shouldAsk(moment)) return;
+      Install.markAsked(moment);
+      this.showInstall(moment);
+    });
+  }
+
+  /** small drawn glyphs for the step-by-step instructions */
+  glyph(kind, x, y) {
+    const g = this.add.graphics({ x, y });
+    g.fillStyle(0x2c7be5, 1); g.fillRoundedRect(-15, -15, 30, 30, 8);
+    g.lineStyle(2.4, 0xffffff, 1);
+    if (kind === 'share') {
+      g.beginPath(); g.moveTo(-4, -3); g.lineTo(-8, -3); g.lineTo(-8, 9); g.lineTo(8, 9); g.lineTo(8, -3); g.lineTo(4, -3); g.strokePath();
+      g.lineBetween(0, -10, 0, 3); g.lineBetween(-4, -6, 0, -10); g.lineBetween(4, -6, 0, -10);
+    } else if (kind === 'add') {
+      g.strokeRoundedRect(-8, -8, 16, 16, 4); g.lineBetween(0, -4, 0, 4); g.lineBetween(-4, 0, 4, 0);
+    } else if (kind === 'dots') {
+      g.fillStyle(0xffffff, 1); [-6, 0, 6].forEach((dx) => g.fillCircle(dx, 0, 2.2));
+    } else if (kind === 'browser') {
+      g.strokeCircle(0, 0, 8); g.lineBetween(-8, 0, 8, 0); g.strokeEllipse(0, 0, 7, 16);
+    } else if (kind === 'home') {
+      g.beginPath(); g.moveTo(-8, 0); g.lineTo(0, -8); g.lineTo(8, 0); g.strokePath(); g.strokeRect(-5, 0, 10, 8);
+    }
+    return g;
+  }
+
+  showInstall(moment = 'button') {
+    const mode = Install.mode;
+    if (!mode) return;
+    const gs = this.gameScene.gs;
+    const hasProgress = Object.keys(gs.branches.stand.unlocked || {}).length > 3;
+    const bonus = money(INSTALL_BONUS);
+    this.openModal((card) => {
+      const w = Math.min(340, this.W - 28);
+      let h;
+      const benefits = (y0) => {
+        [['Plays without data', 'Load once, then play anywhere'], ['One tap from your home screen', 'Full screen, no browser bars'], [`${bonus} install bonus`, 'Collect it when you open the app']].forEach(([a, b2], i) => {
+          const y = y0 + i * 46;
+          const ck = this.add.graphics(); ck.fillStyle(i === 2 ? 0xffd23f : 0x2bb34a, 1); ck.fillCircle(0, 0, 13);
+          ck.lineStyle(3, i === 2 ? 0x7a4a00 : 0xffffff, 1); ck.beginPath(); ck.moveTo(-6, 0); ck.lineTo(-2, 4); ck.lineTo(6, -5); ck.strokePath();
+          ck.setPosition(-w / 2 + 40, y);
+          card.add(ck);
+          card.add(this.txt(-w / 2 + 64, y - 10, a, 15.5, 700, '#3a2a1a').setOrigin(0, 0.5));
+          card.add(this.txt(-w / 2 + 64, y + 9, b2, 12, 500, '#7a6450').setOrigin(0, 0.5));
+        });
+      };
+      const steps = (y0, list) => {
+        list.forEach(([g, t], i) => {
+          const y = y0 + i * 48;
+          card.add(this.txt(-w / 2 + 28, y, `${i + 1}`, 18, 700, '#ff7a1a').setOrigin(0.5));
+          card.add(this.glyph(g, -w / 2 + 62, y));
+          card.add(this.txt(-w / 2 + 88, y, t, 14, 600, '#3a2a1a', { wordWrap: { width: w - 110 } }).setOrigin(0, 0.5));
+        });
+      };
+      const later = (y) => {
+        const t = label(this, 0, y, 'Not now', { size: 15, color: '#7a6450', stroke: null, res: this.dpr * 1.5 });
+        t.setInteractive({ useHandCursor: true });
+        t.on('pointerdown', () => { Sound.play('click'); Install.dismissed(moment); this.closeModal(); });
+        card.add(t);
+      };
+      const icons = (y) => {
+        card.add(img(this, -26, y, 'icon_puff').setScale(0.5 * 0.9));
+        card.add(img(this, 26, y - 4, 'icon_zobo').setScale(0.5 * 0.9));
+      };
+
+      if (mode === 'prompt') {
+        h = 400;
+        this.card(card, w, h, 'Get the app. It\'s free!', 0x2bb34a);
+        icons(-h / 2 + 100);
+        benefits(-h / 2 + 160);
+        this.bigButton(card, 0, h / 2 - 82, 'Install', 0xff7a1a, async () => {
+          this.closeModal(true);
+          const ok = await Install.prompt();
+          if (ok) this.toast(`Installing! Open it from your home screen to collect ${bonus}`, 'icon_check', 0x2bb34a);
+        }, 220, 54, 24);
+        later(h / 2 - 30);
+      } else if (mode === 'ios') {
+        h = hasProgress ? 428 : 404;
+        this.card(card, w, h, 'Add it to your Home Screen', 0x2bb34a);
+        card.add(this.txt(0, -h / 2 + 86, `Plays without data, opens in one tap,\nand you get a ${bonus} bonus.`, 13.5, 600, '#3a2a1a', { align: 'center' }).setOrigin(0.5));
+        steps(-h / 2 + 142, [['share', 'Tap the Share button in Safari (or ••• then Share)'], ['add', 'Tap "Add to Home Screen", then "Add"'], ['home', `Open Aba Chop Spot from your Home Screen to collect ${bonus}`]]);
+        if (hasProgress) card.add(this.txt(0, h / 2 - 126, 'On iPhone the app starts its own fresh save.', 12, 600, '#c0392b').setOrigin(0.5));
+        this.bigButton(card, 0, h / 2 - 82, 'Got it', 0x2bb34a, () => this.closeModal(), 200, 50, 22);
+        later(h / 2 - 30);
+      } else {
+        const ios = Install.isIOS;
+        const where = ios ? 'Safari' : 'Chrome';
+        h = ios ? 420 : 390;
+        this.card(card, w, h, `Play in ${where}`, 0x2c7be5);
+        card.add(this.txt(0, -h / 2 + 100, `You're playing inside ${Install.inAppName}. Open the game in ${where} so you can install it and keep your progress. Do it now: progress here can't move over later.`, 14, 600, '#3a2a1a', { align: 'center', wordWrap: { width: w - 44 } }).setOrigin(0.5));
+        if (ios) {
+          steps(-h / 2 + 182, [['dots', 'Tap ••• or the compass/share icon at the top or bottom'], ['browser', 'Choose "Open in Safari" (or "Open in browser")']]);
+          this.bigButton(card, 0, h / 2 - 82, 'Got it', 0x2c7be5, () => this.closeModal(), 200, 50, 22);
+        } else {
+          steps(-h / 2 + 182, [['dots', 'If nothing happens: tap ⋮ at the top right'], ['browser', 'Choose "Open in Chrome" or "Open in browser"']]);
+          this.bigButton(card, 0, h / 2 - 82, 'Open in Chrome', 0x2c7be5, () => { this.closeModal(true); Install.openInBrowser(); }, 240, 54, 22);
+        }
+        later(h / 2 - 30);
+      }
+    }, 'install');
+  }
+
+  showInstallBonus() {
+    const bonus = money(INSTALL_BONUS);
+    this.gameScene.addCash(INSTALL_BONUS);
+    this.gameScene.save();
+    const m = this.openModal((card) => {
+      const w = Math.min(320, this.W - 40), h = 324;
+      this.card(card, w, h, 'You installed it!', 0x2bb34a);
+      card.add(img(this, 0, -h / 2 + 108, 'icon_cash').setScale(0.5 * 1.1));
+      card.add(this.txt(0, -h / 2 + 160, 'Aba Chop Spot is on your home screen.\nHere is your install bonus:', 14.5, 500, '#3a2a1a', { align: 'center' }).setOrigin(0.5));
+      card.add(label(this, 0, -h / 2 + 202, `+${bonus}`, { size: 28, color: '#2bb34a', stroke: null, res: this.dpr * 1.5 }));
+      this.bigButton(card, 0, h / 2 - 46, 'Let\'s cook!', 0xff7a1a, () => this.closeModal(), 180);
+    }, 'bonus');
+    m.onClose = () => { if (!this.gameScene.gs.profile) this.time.delayedCall(250, () => this.showCreator()); };
+    Sound.play('cash'); Haptic.tap('medium');
   }
 
   ownerTitle() {

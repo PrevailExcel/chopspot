@@ -24,6 +24,21 @@ Or from your computer: `npx vercel` (preview) and `npx vercel --prod`.
 
 Link previews on WhatsApp and X use `public/og.png`. On Vercel its full address is filled in automatically. If you add a custom domain, set an environment variable `SITE_URL=https://yourdomain` in the Vercel project and redeploy.
 
+## Getting players to install it
+
+The web build is an installable app (manifest + offline service worker via `vite-plugin-pwa`). Once installed it plays without data. The logic is in **`src/install.js`**:
+
+| Where the player is | What the game does |
+|---|---|
+| Android Chrome / Edge / Samsung Internet | Holds back the browser's install banner and shows its own "Get the app" card at a good moment, then the real install sheet. |
+| iPhone / iPad Safari | Shows the 3 taps: Share → Add to Home Screen → open it. |
+| Inside WhatsApp, Instagram, Facebook, X, TikTok… | Asks right after character creation to open the game in Chrome (one tap on Android) or Safari, because installing is impossible there and saves don't move over later. |
+| Opened from the home screen | Pays a one-time **₦1,000 install bonus** (`INSTALL_BONUS`). |
+
+When it asks: after the 3rd unlock, a claimed goal, a fame level-up, or closing the welcome-back screen, never in the first 40 seconds, once per session, at least 20 hours apart, at most 4 times. A small phone button with a "+₦1k" tag sits under the map button until the game is installed. Funnel events (`install_ask`, `install_choice`, `install`, `install_bonus`, …) go to `TRACK_URL` with the ad events.
+
+Nothing shows inside the Android app (Capacitor) or when the game is embedded in another page.
+
 ## Android (Capacitor)
 
 The `android/` project is already generated, set to portrait, and includes the haptics plugin.
@@ -83,6 +98,7 @@ Everything numeric lives in **`src/config.js`**: layouts, prices, unlock lists a
 src/
   main.js               boot, DPR-aware sizing, font loading
   config.js             all balance and layout numbers
+  install.js            home-screen install prompts, install bonus
   ads.js                billboards: advertisers, board slots, view/tap counting
   state.js              save format (v2, migrates v1 saves), away-earnings maths
   profile.js            player character: guy/girl, skin, outfit, hair, name on the signs

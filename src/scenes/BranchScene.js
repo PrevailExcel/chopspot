@@ -284,6 +284,7 @@ export default class BranchScene extends Phaser.Scene {
       Sound.play('win'); Haptic.tap('heavy');
       this.confetti(this.player.x, this.player.y - 90);
       this.game.events.emit('fame-up', { lvl: f.lvl, branch: this.def.name });
+      this.game.events.emit('moment', 'fame');
     }
     this.publishFame();
   }
@@ -380,6 +381,7 @@ export default class BranchScene extends Phaser.Scene {
     this.b.goals.splice(i, 1, this.makeGoal(this.b.goals.map((x) => x.kind)));
     this.publishGoals();
     this.save();
+    this.game.events.emit('moment', 'goal');
   }
 
   // ---------- pads / unlocking ----------
@@ -410,7 +412,7 @@ export default class BranchScene extends Phaser.Scene {
     if (id === this.finaleId() && !b.finished) {
       b.finished = true;
       this.time.delayedCall(900, () => { Sound.play('win'); this.game.events.emit('finished', { branch: this.branchKey, stats: { ...b.stats } }); });
-    }
+    } else if (this.unlockCount() >= 3) this.game.events.emit('moment', 'progress');
     this.save();
   }
 
