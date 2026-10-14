@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { buildAllTextures } from '../art.js';
 import { buildAdTextures } from '../ads.js';
 import { loadState } from '../state.js';
+import { prepareBranch } from '../lounge/loader.js';
 
 export default class BootScene extends Phaser.Scene {
   constructor() { super('Boot'); }
@@ -13,6 +14,7 @@ export default class BootScene extends Phaser.Scene {
     this.registry.set('isNew', isNew);
     const boot = document.getElementById('boot');
     if (boot) { boot.style.opacity = '0'; setTimeout(() => boot.remove(), 350); }
-    this.scene.start(state.branch || 'stand');
+    const key = state.branch || 'stand';
+    prepareBranch(key).then(() => this.scene.start(key)).catch(() => { state.branch = 'stand'; this.scene.start('stand'); });
   }
 }

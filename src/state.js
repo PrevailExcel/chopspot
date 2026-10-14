@@ -1,6 +1,6 @@
 // Save data for the whole game: one shared wallet plus a record per branch.
 import { Store } from './platform.js';
-import { BRANCHES, BRANCH_ORDER, FAME } from './config.js';
+import { BRANCHES, BRANCH_ORDER, FAME, LOUNGE_AMBIENCE } from './config.js';
 
 export function freshBranch(key) {
   const b = {
@@ -15,6 +15,7 @@ export function freshBranch(key) {
   };
   if (key === 'stand') { b.unlocked.fryer1 = true; b.px = 500; b.py = 780; }
   if (key === 'buka') { b.unlocked.jollof = true; b.unlocked.t1 = true; b.unlocked.t2 = true; b.px = 500; b.py = 640; }
+  if (key === 'lounge') { b.unlocked.grill = true; b.unlocked.t1 = true; b.unlocked.t2 = true; b.px = 1000; b.py = 1820; b.introDone = false; }
   return b;
 }
 
@@ -86,7 +87,15 @@ export function priceMult(key, b) {
   let m = (1 + 0.15 * (b.up.price || 0)) * FAME.price(b.fame.lvl);
   if (key === 'stand' && b.unlocked.sign) m *= 1.25;
   if (key === 'buka' && b.unlocked.generator) m *= 1.2;
+  if (key === 'lounge') m *= 1 + ambience(b);
   return m;
+}
+
+/** GRA Lounge: decor bonus on prices */
+export function ambience(b) {
+  let a = 0;
+  for (const [id, v] of Object.entries(LOUNGE_AMBIENCE)) if (b.unlocked[id]) a += v;
+  return a;
 }
 
 export function passiveRate(key, b) {

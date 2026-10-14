@@ -57,6 +57,12 @@ export default class UIScene extends Phaser.Scene {
     on('branches-changed', () => { if (this.modal && this.modal.kind === 'map') this.showMap(); });
     on('blur', () => Object.assign(this.joy, { id: null, active: false, x: 0, y: 0 }));
     on('moment', this.onMoment);
+    on('lounge-coach', () => this.showLoungeCoach());
+    on('explore-state', (onState) => {
+      const r = this.eyeBtn.eyeRing; r.clear();
+      if (onState) { r.lineStyle(3.5, 0xffd23f, 1); r.strokeCircle(0, 0, 24); }
+      this.joyG.setVisible(!onState);
+    });
     on('profile-set', () => this.time.delayedCall(1500, () => this.game.events.emit('moment', 'start')));
     const offInstall = Install.onChange(() => this.refreshInstallBtn());
     this.events.once('shutdown', offInstall);
@@ -69,6 +75,8 @@ export default class UIScene extends Phaser.Scene {
     this.onGoals(null, this.registry.get('goals'));
     if (!titleDone) this.showTitle();
     else if (!this.gameScene.gs.profile) this.showCreator();
+    const wb = this.registry.get('welcome');
+    if (wb) { this.registry.set('welcome', null); this.time.delayedCall(700, () => this.showWelcome(wb)); }
   }
 
   get W() { return this.scale.width / this.dpr; }
@@ -89,6 +97,8 @@ export default class UIScene extends Phaser.Scene {
     this.goalsBtn.setPosition(36, top + 82);
     this.mapBtn.setPosition(36, top + 136);
     this.installBtn.setPosition(36, top + 190);
+    this.camBtn.setPosition(this.W - 32, top + 82);
+    this.eyeBtn.setPosition(this.W - 32, top + 136);
     this.hintC.setPosition(W / 2, top + 76);
     this.layoutRush();
     this.layoutMoveHint();
@@ -121,7 +131,11 @@ export default class UIScene extends Phaser.Scene {
     this.goalsBtn = this.makeRoundButton('icon_goals', () => this.showGoals());
     this.mapBtn = this.makeRoundButton('icon_map', () => this.showMap());
     this.installBtn = this.makeRoundButton('install', () => this.showInstall('button'));
-    [this.gearBtn, this.goalsBtn, this.mapBtn, this.installBtn].forEach((b) => b.setDepth(100));
+    this.camBtn = this.makeRoundButton('camera', () => this.game.events.emit('camera-toggle'));
+    this.camBtn.setVisible(this.registry.get('active') === 'lounge');
+    this.eyeBtn = this.makeRoundButton('eye', () => this.game.events.emit('explore-toggle'));
+    this.eyeBtn.setVisible(this.registry.get('active') === 'lounge');
+    [this.gearBtn, this.goalsBtn, this.mapBtn, this.installBtn, this.camBtn, this.eyeBtn].forEach((b) => b.setDepth(100));
     // "+N1k" tag under the install button
     const tag = this.add.container(0, 22);
     const tg = this.add.graphics(); tg.fillStyle(0x2bb34a, 1); tg.fillRoundedRect(-22, -8, 44, 16, 8); tg.lineStyle(1.5, 0xffffff, 1); tg.strokeRoundedRect(-22, -8, 44, 16, 8);
@@ -150,6 +164,16 @@ export default class UIScene extends Phaser.Scene {
       for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4; gg.fillRoundedRect(Math.cos(a) * 9 - 3.5, Math.sin(a) * 9 - 3.5, 7, 7, 2); }
       gg.fillCircle(0, 0, 9); gg.fillStyle(0x2a3550, 1); gg.fillCircle(0, 0, 4);
       c.add(gg);
+    } else if (kind === 'eye') {
+      const eg = this.add.graphics();
+      eg.fillStyle(0xffffff, 1); eg.fillEllipse(0, 0, 26, 15);
+      eg.fillStyle(0x2a3550, 1); eg.fillCircle(0, 0, 5.5); eg.fillStyle(0xffd23f, 1); eg.fillCircle(0, 0, 3);
+      c.add(eg); c.eyeRing = this.add.graphics(); c.add(c.eyeRing);
+    } else if (kind === 'camera') {
+      const cg = this.add.graphics();
+      cg.fillStyle(0xffffff, 1); cg.fillRoundedRect(-11, -7, 22, 15, 4); cg.fillRect(-5, -10, 9, 4);
+      cg.fillStyle(0x2a3550, 1); cg.fillCircle(0, 0.5, 5.2); cg.fillStyle(0xffd23f, 1); cg.fillCircle(0, 0.5, 2.8);
+      c.add(cg);
     } else if (kind === 'install') {
       const pg = this.add.graphics();
       pg.lineStyle(2.5, 0xffffff, 1); pg.strokeRoundedRect(-7.5, -12, 15, 24, 3.5);
@@ -274,7 +298,7 @@ export default class UIScene extends Phaser.Scene {
     const thumb = this.add.graphics();
     thumb.fillStyle(0xffffff, 0.95); thumb.fillCircle(0, 0, 26);
     thumb.lineStyle(2, 0xcccccc, 1); thumb.strokeCircle(0, 0, 26);
-    const txt = label(this, 0, JOY_R + 34, this.sys.game.device.input.touch ? 'DRAG TO MOVE' : 'DRAG OR USE WASD', { size: 24, stroke: '#2a2a2a', sw: 6, res: this.dpr * 1.5 });
+    const txt = label(this, 0, JOY_R + 34, this.registry.get('active') === 'lounge' ? (this.sys.game.device.input.touch ? 'DRAG OR TAP TO MOVE' : 'CLICK, DRAG OR WASD') : (this.sys.game.device.input.touch ? 'DRAG TO MOVE' : 'DRAG OR USE WASD'), { size: 24, stroke: '#2a2a2a', sw: 6, res: this.dpr * 1.5 });
     c.add([g, thumb, txt]);
     this.moveHint = c;
     this.tweens.add({ targets: thumb, x: { from: -26, to: 26 }, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
@@ -290,7 +314,7 @@ export default class UIScene extends Phaser.Scene {
   setupJoystick() {
     this.input.addPointer(2);
     this.input.on('pointerdown', (p, over) => {
-      if (this.modal || this.titleOpen) return;
+      if (this.modal || this.titleOpen || this.blockJoy) return;
       if (over && over.length) return;
       if (this.joy.id !== null) return;
       Sound.unlock();
@@ -299,6 +323,7 @@ export default class UIScene extends Phaser.Scene {
     });
     this.input.on('pointermove', (p) => {
       if (p.id !== this.joy.id) return;
+      if (this.blockJoy) { Object.assign(this.joy, { id: null, active: false, x: 0, y: 0 }); return; }
       const x = p.x / this.dpr, y = p.y / this.dpr;
       let dx = x - this.joy.bx, dy = y - this.joy.by;
       const d = Math.hypot(dx, dy);
@@ -534,7 +559,7 @@ export default class UIScene extends Phaser.Scene {
         card.add(img(this, left + 24, y - 38, br.icon).setScale(0.5 * 0.7));
         card.add(this.txt(left + 54, y - 58, br.name, 16, 700, '#3a2a1a'));
         if (!br.owned) {
-          card.add(this.txt(left + 54, y - 36, br.reqMet ? 'Open a buka at Ariaria Market: table service with jollof, noodles, akara, bread and malt.' : br.requiresText, 12, 500, '#7a6450', { wordWrap: { width: w - 110 } }));
+          card.add(this.txt(left + 54, y - 36, br.reqMet ? (br.pitch || 'Open a buka at Ariaria Market: table service with jollof, noodles, akara, bread and malt.') : br.requiresText, 12, 500, '#7a6450', { wordWrap: { width: w - 110 } }));
           const can = br.reqMet && cash >= br.cost;
           const b = this.bigButton(card, 0, y + 38, `Open for ${money(br.cost)}`, can ? 0x2bb34a : 0xc9b99c, () => {
             if (!can) { Sound.play('deny'); return; }
@@ -619,9 +644,21 @@ export default class UIScene extends Phaser.Scene {
   showSettings() {
     const s = this.gameScene.gs.settings;
     this.openModal((card) => {
-      const w = Math.min(320, this.W - 40), h = 450;
+      const w = Math.min(320, this.W - 40), h = 500;
       this.card(card, w, h, 'Settings', 0x2a3550);
-      this.bigButton(card, 0, -h / 2 + 96 + 3 * 54 + 8, 'Change character', 0xff7a1a, () => this.showCreator(), 220, 46, 18);
+      // graphics quality for the 3D restaurant (Auto picks from the phone)
+      const gy = -h / 2 + 96 + 3 * 54;
+      card.add(this.txt(-w / 2 + 26, gy, 'Graphics', 18, 600).setOrigin(0, 0.5));
+      const names = { auto: 'Auto', high: 'High', mid: 'Medium', low: 'Low' };
+      let cur = 'auto'; try { cur = localStorage.getItem('abachop.gfx') || 'auto'; } catch (e) { /* no storage */ }
+      const gb = this.bigButton(card, w / 2 - 70, gy, names[cur] || 'Auto', 0x0f8b8d, () => {
+        const order = ['auto', 'high', 'mid', 'low'];
+        cur = order[(order.indexOf(cur) + 1) % order.length];
+        try { if (cur === 'auto') localStorage.removeItem('abachop.gfx'); else localStorage.setItem('abachop.gfx', cur); } catch (e) { /* no storage */ }
+        gb.list[1].setText(names[cur]);
+        this.game.events.emit('graphics', cur);
+      }, 110, 40, 16);
+      this.bigButton(card, 0, -h / 2 + 96 + 4 * 54 + 8, 'Change character', 0xff7a1a, () => this.showCreator(), 220, 46, 18);
       const rows = [['sfx', 'Sound effects'], ['music', 'Music'], ['haptic', 'Vibration']];
       rows.forEach(([key, name], i) => {
         const y = -h / 2 + 96 + i * 54;
@@ -658,7 +695,7 @@ export default class UIScene extends Phaser.Scene {
   }
 
   showWelcome({ earn, minutes, branch, capped }) {
-    if (this.titleOpen) { this.time.delayedCall(400, () => this.showWelcome({ earn, minutes, branch, capped })); return; }
+    if (this.titleOpen || (this.modal && this.modal.kind === 'creator')) { this.time.delayedCall(400, () => this.showWelcome({ earn, minutes, branch, capped })); return; }
     const m = this.openModal((card) => {
       const w = Math.min(320, this.W - 40), h = capped ? 330 : 300;
       this.card(card, w, h, 'Welcome back!', 0x7b2d8b);
@@ -675,21 +712,25 @@ export default class UIScene extends Phaser.Scene {
 
   showFinished({ branch, stats }) {
     const stand = branch === 'stand';
+    const lounge = branch === 'lounge';
+    const showMapBtn = branch !== 'lounge';
     this.openModal((card) => {
       const w = Math.min(330, this.W - 32), h = 430;
-      this.card(card, w, h, stand ? 'The talk of Aba!' : 'Ariaria is booming!', 0xff4fa3);
-      card.add(img(this, 0, -126, stand ? 'icon_sign' : 'icon_bulb').setScale(0.5 * 1.2));
+      this.card(card, w, h, stand ? 'The talk of Aba!' : lounge ? 'The finest spot in Aba!' : 'Ariaria is booming!', 0xff4fa3);
+      card.add(img(this, 0, -126, stand ? 'icon_sign' : lounge ? 'icon_fountain' : 'icon_bulb').setScale(0.5 * 1.2));
       const msg = stand
         ? `${this.ownerTitle()} spot is now the most famous\npuff-puff & zobo spot on Faulks Road.\nOpen your next branch from the map!`
-        : 'Every table is full, every night.\nFame keeps rising, and so do the\ncustomers. How far can you go?';
+        : lounge
+          ? 'GRA\'s most talked-about restaurant.\nBookings every night. Fame keeps\nrising. How far can you go?'
+          : 'Every table is full, every night.\nFame keeps rising, and so do the\ncustomers. Your next branch is on the map!';
       card.add(this.txt(0, -50, msg, 14.5, 500, '#3a2a1a', { align: 'center' }).setOrigin(0.5));
-      const lines = [['Customers served', stats.served], [stand ? 'Shuttle orders' : 'Keke orders', stats.vehicles], ['Earned here', money(stats.earned)]];
+      const lines = [['Guests served', stats.served], [stand ? 'Shuttle orders' : lounge ? 'Party bookings' : 'Keke orders', stats.vehicles], ['Earned here', money(stats.earned)]];
       lines.forEach(([k, v], i) => {
         const y = 14 + i * 28;
         card.add(this.txt(-w / 2 + 30, y, k, 15, 500, '#7a6450').setOrigin(0, 0.5));
         card.add(this.txt(w / 2 - 30, y, String(v), 16, 700).setOrigin(1, 0.5));
       });
-      if (stand) {
+      if (showMapBtn) {
         this.bigButton(card, 0, h / 2 - 100, 'Open the map', 0x0f8b8d, () => this.showMap(), 210);
         const k = label(this, 0, h / 2 - 38, 'Keep cooking', { size: 16, color: '#7a6450', stroke: null, res: this.dpr * 1.5 });
         k.setInteractive({ useHandCursor: true }); k.on('pointerdown', () => this.closeModal());
@@ -702,6 +743,32 @@ export default class UIScene extends Phaser.Scene {
     }).setDepth(400);
     this.time.delayedCall(3500, () => e.stop());
     this.time.delayedCall(8000, () => e.destroy());
+  }
+
+  // ---------- how to play in the 3D restaurant (shown once) ----------
+  showLoungeCoach() {
+    if (this.titleOpen || this.modal) { this.time.delayedCall(600, () => this.showLoungeCoach()); return; }
+    this.openModal((card) => {
+      const w = Math.min(340, this.W - 28), h = 470;
+      this.card(card, w, h, 'How to play here', 0x1d4537);
+      const rows = [
+        ['walk', 'Walk', 'Drag anywhere to walk, or just tap where you want to go.'],
+        ['ring', 'Use things', 'Step into a glowing ring to pick up dishes, seat guests and serve tables. Labels show what needs you.'],
+        ['look', 'Look around', 'Pinch to zoom. Twist two fingers to turn. Tap the eye button to explore the whole place.'],
+      ];
+      rows.forEach(([kind, title, body], i) => {
+        const y = -h / 2 + 110 + i * 102;
+        const g = this.add.graphics({ x: -w / 2 + 46, y });
+        g.fillStyle(0xe8f1ec, 1); g.fillCircle(0, 0, 28);
+        if (kind === 'walk') { g.fillStyle(0x1d4537, 1); g.fillCircle(0, -6, 7); g.fillRoundedRect(-5, 0, 10, 16, 4); g.lineStyle(3, 0xffb21a, 1); g.strokeCircle(0, -6, 13); }
+        else if (kind === 'ring') { g.lineStyle(4, 0xffd23f, 1); g.strokeEllipse(0, 6, 40, 16); g.fillStyle(0x1d4537, 1); g.fillCircle(0, -10, 6); g.fillRoundedRect(-5, -5, 10, 13, 4); }
+        else { g.fillStyle(0x1d4537, 1); g.fillCircle(-9, 4, 6); g.fillCircle(9, -4, 6); g.lineStyle(3, 0xffb21a, 1); g.beginPath(); g.arc(0, 0, 18, -2.6, -0.6); g.strokePath(); g.beginPath(); g.arc(0, 0, 18, 0.5, 2.5); g.strokePath(); }
+        card.add(g);
+        card.add(this.txt(-w / 2 + 88, y - 26, title, 17, 700, '#1d4537'));
+        card.add(this.txt(-w / 2 + 88, y - 4, body, 13, 500, '#3a2a1a', { wordWrap: { width: w - 110 } }));
+      });
+      this.bigButton(card, 0, h / 2 - 50, 'Let\'s go', 0xff7a1a, () => this.closeModal(), 200);
+    }, 'coach');
   }
 
   // ---------- getting the game onto the home screen ----------

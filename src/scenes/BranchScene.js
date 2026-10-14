@@ -12,6 +12,7 @@ import { Sound } from '../audio.js';
 import { Haptic, Store } from '../platform.js';
 import { saveState, freshBranch, pendingNow, priceMult as basePrice, cashCap, passiveRate } from '../state.js';
 import { lookFromProfile, possessive } from '../profile.js';
+import { prepareBranch } from '../lounge/loader.js';
 
 export const ADA_LOOK = {
   skin: 0x8d5a36, shirt: 0xff7a1a, pattern: 0x0f8b8d, pants: 0x2a3550, dress: true,
@@ -37,6 +38,8 @@ export default class BranchScene extends Phaser.Scene {
     const st = this.gs;
     Sound.setSfx(st.settings.sfx); Sound.setMusic(st.settings.music); Haptic.set(st.settings.haptic);
 
+    this.travelling = false; // scene objects are reused between visits
+    this.movedOnce = false;
     this.producers = {};
     this.colliders = [];
     this.pads = [];
@@ -57,7 +60,7 @@ export default class BranchScene extends Phaser.Scene {
     this.restore();
 
     // Ada
-    this.player = new Rig(this, this.b.px, this.b.py, this.playerLook());
+    this.player = this.makePlayer(this.b.px, this.b.py, this.playerLook());
     (this.b.carry || []).filter((t) => ITEMS[t]).slice(0, this.carryCap()).forEach((type) => { const im = this.player.addCarry(type); im.setScale(0.5); });
     this.resolveCollisions();
     const cam = this.cameras.main;
@@ -130,15 +133,24 @@ export default class BranchScene extends Phaser.Scene {
   applyProfile() {
     const old = this.player;
     const carry = old.carryItems.map((c) => c.type);
-    this.player = new Rig(this, old.x, old.y, this.playerLook());
+    this.player = this.makePlayer(old.x, old.y, this.playerLook());
     carry.forEach((type) => { const im = this.player.addCarry(type); im.setScale(0.5); });
     old.destroy();
-    this.cameras.main.startFollow(this.player, true, 0.14, 0.14);
+    this.followPlayer();
     this.refreshSigns();
     this.save();
   }
 
   // ---------- hooks for branch scenes ----------
+  // visuals a 3D branch replaces; the 2D branches use these defaults
+  makePlayer(x, y, look) { return new Rig(this, x, y, look); }
+  followPlayer() { this.cameras.main.startFollow(this.player, true, 0.14, 0.14); }
+  fly(tex, from, to, opts) { return fly(this, tex, from, to, opts); }
+  /** floating text `lift` world units above (x, y) */
+  floatAt(x, y, lift, str, color, size) { this.floatText(x, y - lift, str, color, size); }
+  walkBounds() { return BOUNDS; }
+  playerRadius() { return PLAYER.radius; }
+  shake(ms, amt) { this.cameras.main.shake(ms, amt); }
   buildSigns() {}
   buildWorld() {}
   buildUnlock() {}
@@ -248,7 +260,7 @@ export default class BranchScene extends Phaser.Scene {
   /** one item goes onto the vehicle (from Ada or a loader) */
   loadVehicle(type, from) {
     const v = this.vehicle;
-    fly(this, ITEMS[type].tex, from, { x: v.im.x + Phaser.Math.Between(-50, 50), y: v.im.y - 50 }, { duration: 240, arc: 50 });
+    this.fly(ITEMS[type].tex, from, { x: v.im.x + Phaser.Math.Between(-50, 50), y: v.im.y - 50 }, { duration: 240, arc: 50 });
     Sound.play('drop', { n: 2 });
     const done = v.load(type);
     if (done) {
@@ -329,7 +341,7 @@ export default class BranchScene extends Phaser.Scene {
       this.rushLeft = RUSH.length;
       this.game.events.emit('rush-start');
       Sound.play('honk'); Haptic.tap('heavy');
-      this.cameras.main.shake(200, 0.004);
+      this.shake(200, 0.004);
     }
   }
 
@@ -376,7 +388,7 @@ export default class BranchScene extends Phaser.Scene {
     if (!g || !g.done) return;
     this.addCash(g.reward);
     this.addXP(g.xp);
-    this.floatText(this.player.x, this.player.y - 150, `+${money(g.reward)}`, '#bdf7a8', 28);
+    this.floatAt(this.player.x, this.player.y, 150, `+${money(g.reward)}`, '#bdf7a8', 28);
     Sound.play('cash'); Haptic.tap('medium');
     this.b.goals.splice(i, 1, this.makeGoal(this.b.goals.map((x) => x.kind)));
     this.publishGoals();
@@ -403,7 +415,7 @@ export default class BranchScene extends Phaser.Scene {
     this.buildUnlock(id, true);
     Sound.play('unlock'); Haptic.tap('heavy');
     this.confetti(def.x, def.y - 40);
-    this.cameras.main.shake(160, 0.003);
+    this.shake(160, 0.003);
     this.game.events.emit('toast', `${def.name} unlocked!`);
     this.registry.set('progress', { n: this.unlockCount(), total: this.unlockList().length });
     this.time.delayedCall(10, () => this.resolveCollisions());
@@ -426,7 +438,8 @@ export default class BranchScene extends Phaser.Scene {
     if (earn > 0 && this.tillCash && away > 30) {
       this.tillCash.deposit(earn);
       const capped = earn >= cashCap(this.branchKey, b);
-      this.time.delayedCall(700, () => this.game.events.emit('welcome-back', { earn, minutes: Math.max(1, Math.round(away / 60)), branch: this.def.name, capped }));
+      // the HUD picks this up once it is ready (it may still be behind the title screen)
+      this.registry.set('welcome', { earn, minutes: Math.max(1, Math.round(away / 60)), branch: this.def.name, capped });
     }
     // nudge about money piling up at the other branches
     BRANCH_ORDER.filter((k) => k !== this.branchKey && this.gs.owned[k]).forEach((k, i) => {
@@ -443,10 +456,10 @@ export default class BranchScene extends Phaser.Scene {
       const owned = !!this.gs.owned[key];
       const b = this.gs.branches[key];
       const here = key === this.branchKey;
-      const reqMet = !d.requires || !!this.gs.branches.stand.unlocked[d.requires];
+      const reqMet = this.branchReqMet(d);
       return {
         key, name: d.full, icon: d.icon, owned, here,
-        cost: d.cost || 0, reqMet, requiresText: d.requiresText,
+        cost: d.cost || 0, reqMet, requiresText: d.requiresText, pitch: d.pitch,
         pending: owned && !here ? pendingNow(key, b, now) : 0,
         cap: owned ? cashCap(key, b) : 0,
         rate: owned ? passiveRate(key, b) : 0,
@@ -457,6 +470,12 @@ export default class BranchScene extends Phaser.Scene {
     });
   }
 
+  branchReqMet(d) {
+    if (!d.requires) return true;
+    const rb = this.gs.branches[d.requiresBranch || 'stand'];
+    return !!(this.gs.owned[d.requiresBranch || 'stand'] && rb && rb.unlocked[d.requires]);
+  }
+
   collectRemote(key) {
     const b = this.gs.branches[key];
     if (!b || key === this.branchKey || !b.unlocked.manager) return;
@@ -464,7 +483,7 @@ export default class BranchScene extends Phaser.Scene {
     if (amt <= 0) return;
     b.pending = 0; b.leftAt = Date.now();
     this.addCash(amt);
-    this.floatText(this.player.x, this.player.y - 150, `+${money(amt)}`, '#bdf7a8', 28);
+    this.floatAt(this.player.x, this.player.y, 150, `+${money(amt)}`, '#bdf7a8', 28);
     Sound.play('cash'); Haptic.tap('medium');
     this.save();
     this.game.events.emit('branches-changed');
@@ -473,7 +492,7 @@ export default class BranchScene extends Phaser.Scene {
   buyBranch(key) {
     const d = BRANCHES[key];
     if (this.gs.owned[key] || this.gs.cash < d.cost) { Sound.play('deny'); return; }
-    if (d.requires && !this.gs.branches.stand.unlocked[d.requires]) { Sound.play('deny'); return; }
+    if (!this.branchReqMet(d)) { Sound.play('deny'); return; }
     this.spend(d.cost);
     this.gs.owned[key] = true;
     this.gs.branches[key] = freshBranch(key);
@@ -488,9 +507,15 @@ export default class BranchScene extends Phaser.Scene {
     this.b.leftAt = Date.now(); this.b.pending = 0;
     this.gs.branch = key;
     saveState(this.gs);
-    this.cameras.main.fadeOut(300, 0, 0, 0);
-    this.cameras.main.once('camerafadeoutcomplete', () => { this.scene.stop('UI'); this.scene.start(key); });
+    const ready = prepareBranch(key);
+    this.fadeOutThen(() => ready.then(() => { this.scene.stop('UI'); this.scene.start(key); }).catch((e) => {
+      console.error(e); this.travelling = false; this.game.events.emit('toast', 'Could not open that branch. Check your connection.');
+      this.fadeIn();
+    }));
   }
+
+  fadeOutThen(cb) { this.cameras.main.fadeOut(300, 0, 0, 0); this.cameras.main.once('camerafadeoutcomplete', cb); }
+  fadeIn() { this.cameras.main.fadeIn(250, 0, 0, 0); }
 
   // ---------- player ----------
   readInput() {
@@ -518,8 +543,9 @@ export default class BranchScene extends Phaser.Scene {
     this.resolveCollisions();
     p.y += this.vel.y * dt;
     this.resolveCollisions();
-    p.x = Phaser.Math.Clamp(p.x, BOUNDS.x1, BOUNDS.x2);
-    p.y = Phaser.Math.Clamp(p.y, BOUNDS.y1, BOUNDS.y2);
+    const B = this.walkBounds();
+    p.x = Phaser.Math.Clamp(p.x, B.x1, B.x2);
+    p.y = Phaser.Math.Clamp(p.y, B.y1, B.y2);
     p.animate(dt, this.vel.x, this.vel.y);
     this.dustT -= dt;
     if (Math.hypot(this.vel.x, this.vel.y) > 60 && this.dustT <= 0) { this.dustT = 0.13; this.dust.emitParticleAt(p.x + Phaser.Math.Between(-6, 6), p.y, 1); }
@@ -527,7 +553,7 @@ export default class BranchScene extends Phaser.Scene {
   }
 
   resolveCollisions() {
-    const p = this.player; const r = PLAYER.radius;
+    const p = this.player; const r = this.playerRadius();
     if (!p) return;
     for (const c of this.colliders) {
       const nx = Phaser.Math.Clamp(p.x, c.x1, c.x2), ny = Phaser.Math.Clamp(p.y, c.y1, c.y2);
@@ -552,9 +578,9 @@ export default class BranchScene extends Phaser.Scene {
     const from = pr.pile.take();
     const im = p.addCarry(pr.type); im.setVisible(false);
     const n = p.carryCount;
-    fly(this, ITEMS[pr.type].tex, from, () => p.stackTopWorld(), { duration: 170, arc: 40, onDone: () => { if (im.active) im.setVisible(true); } });
+    this.fly(ITEMS[pr.type].tex, from, () => p.stackTopWorld(), { duration: 170, arc: 40, onDone: () => { if (im.active) im.setVisible(true); } });
     Sound.play('pick', { n }); Haptic.tap('light');
-    if (n >= this.carryCap()) this.floatText(p.x, p.y - 140 - n * 6, 'MAX', '#ffd23f', 20);
+    if (n >= this.carryCap()) this.floatAt(p.x, p.y, 140 + n * 6, 'MAX', '#ffd23f', 20);
   }
 
   interact(dt) {
@@ -613,14 +639,14 @@ export default class BranchScene extends Phaser.Scene {
           this.b.padPaid[onPad.def.id] = onPad.paid;
           if (this.drainCool <= 0) {
             this.drainCool = 0.06;
-            fly(this, 'item_cash', { x: p.x, y: p.y - 60 }, { x: onPad.x, y: onPad.y }, { duration: 200, arc: 50 });
+            this.fly('item_cash', { x: p.x, y: p.y - 60, z: 110 }, { x: onPad.x, y: onPad.y, z: 0 }, { duration: 200, arc: 50 });
             Sound.play('tick', { n: this.tickN = (this.tickN || 0) + 1 }); Haptic.tap('light');
           }
           if (onPad.remaining <= 0) { this.drainAcc = 0; this.unlock(onPad.def.id); }
         }
       } else if (this.padHold > 0.25 && st.cash <= 0 && !this.brokeShown) {
         this.brokeShown = true;
-        this.floatText(p.x, p.y - 150, 'Need more ₦', '#ffd6d6', 20);
+        this.floatAt(p.x, p.y, 150, 'Need more ₦', '#ffd6d6', 20);
         Sound.play('deny');
       }
     } else { this.padHold = 0; this.brokeShown = false; this.drainAcc = 0; }
@@ -657,8 +683,9 @@ export default class BranchScene extends Phaser.Scene {
     const st = this.gs; const p = this.player; const v = this.vehicle;
     if (v && v.waiting && !this.b.vehicleIntro) {
       const t = { x: v.zone.cx, y: v.zone.cy };
-      if (p.carryCount === 0) return { target: t, text: `A ${v.cfg.tex === 'm_keke' ? 'keke' : 'shuttle'} wants a big order! Load it before time runs out`, arrow: true };
-      return { target: t, text: 'Load the order in the yellow bay' };
+      const what = v.cfg.label || (v.cfg.tex === 'm_keke' ? 'A keke' : 'A shuttle');
+      if (p.carryCount === 0) return { target: t, text: `${what} wants a big order! Deliver it before time runs out`, arrow: true };
+      return { target: t, text: v.cfg.bayText || 'Load the order in the yellow bay' };
     }
     const affordable = this.pads.filter((x) => st.cash >= x.remaining).sort((a, b) => a.remaining - b.remaining)[0];
     if (affordable) return { target: { x: affordable.x, y: affordable.y }, text: `You can unlock ${affordable.def.name}!`, lift: 40 };
@@ -668,7 +695,7 @@ export default class BranchScene extends Phaser.Scene {
     const branch = this.branchFreeGoal();
     if (branch) return branch;
     if (this.b.goals.some((g) => g.done)) return { text: 'A goal is complete! Tap Goals to claim your reward' };
-    if (next) return { text: `Earn ${money(next.remaining)} more for the ${next.def.name}` };
+    if (next) return { text: next.def.name.startsWith('Hire ') ? `Earn ${money(next.remaining)} more to hire ${next.def.name.slice(5)}` : `Earn ${money(next.remaining)} more for the ${next.def.name}` };
     return { text: 'Keep the customers happy and level up your fame!' };
   }
 

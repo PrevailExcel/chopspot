@@ -49,6 +49,8 @@ const pwa = VitePWA({
 
 export default defineConfig(({ mode }) => ({
   base: './',
+  // the single-file preview opens straight into the 3D GRA Lounge demo
+  define: { __DEMO_DEFAULT__: JSON.stringify(mode === 'single' ? 'gra' : '') },
   plugins: mode === 'single' ? [siteUrl, viteSingleFile()] : [siteUrl, pwa],
   build: {
     outDir: mode === 'single' ? 'dist-single' : 'dist',

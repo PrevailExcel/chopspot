@@ -27,6 +27,12 @@ export const CREATIVES = {
 };
 
 /** Boards per branch. x/y is where the legs stand. The main board sits on the street edge of the lot; the others are across the street. */
+/** screens inside the 3D GRA Lounge (facade screen faces the street, bar screen faces the dining room) */
+export const SCREENS = {
+  'gra-facade': ['vezio', 'house'],
+  'gra-bar': ['vezio'],
+};
+
 export const SLOTS = {
   stand: [
     { id: 'faulks-main', x: 270, y: 1450, ads: ['vezio'] },          // in view whenever you're at the counter

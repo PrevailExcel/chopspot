@@ -779,6 +779,7 @@ export function buildAllTextures(scene) {
   buildScenery(scene);
   buildIcons(scene);
   buildBuka(scene);
+  buildLoungeIcons(scene);
 }
 
 // =====================================================================
@@ -1165,6 +1166,151 @@ function buildBuka(scene) {
     rr(c, 6, 6, 188, 56, 8); c.fillStyle = lin(c, 0, 6, 0, 62, [[0, '#ffd23f'], [1, '#f5a400']]); c.fill(); c.strokeStyle = '#7a4d00'; c.lineWidth = 2.5; c.stroke();
 
   });
+}
+
+// =====================================================================
+// Level 3 (GRA Lounge) icons: dishes, staff, decor
+// =====================================================================
+function plateBase(c, cx, cy, w) {
+  const h = w * 0.42;
+  ell(c, cx, cy + h * 0.14, w / 2, h / 2); c.fillStyle = '#b9c0c8'; c.fill();
+  ell(c, cx, cy, w / 2, h / 2); fillStroke(c, '#ffffff', '#a7b0ba', 1.3);
+  ell(c, cx, cy, w * 0.36, h * 0.34); c.strokeStyle = 'rgba(200,170,90,0.6)'; c.lineWidth = 1.2; c.stroke();
+}
+function buildLoungeIcons(scene) {
+  const S = 64;
+  const T = (key, fn) => tex(scene, key, S, S, 0.5, 0.5, fn);
+  T('icon_steak', (c) => {
+    plateBase(c, 32, 40, 58);
+    c.beginPath(); c.moveTo(14, 38); c.quadraticCurveTo(16, 24, 32, 26); c.quadraticCurveTo(48, 24, 46, 36); c.quadraticCurveTo(44, 46, 28, 45); c.quadraticCurveTo(14, 46, 14, 38); c.closePath();
+    c.fillStyle = lin(c, 0, 24, 0, 46, [[0, '#a3542c'], [1, '#5e2a12']]); c.fill(); c.strokeStyle = '#3d1a0a'; c.lineWidth = 1.5; c.stroke();
+    c.strokeStyle = 'rgba(30,10,0,0.55)'; c.lineWidth = 2.2; for (const x of [22, 30, 38]) { c.beginPath(); c.moveTo(x - 3, 30); c.lineTo(x + 4, 41); c.stroke(); }
+    c.fillStyle = '#f2c14e'; for (let i = 0; i < 5; i++) { rr(c, 40 + i * 2.2, 36 - i * 2, 3, 12, 1.5); c.fill(); }
+    c.fillStyle = '#3f9b4a'; c.beginPath(); c.arc(18, 44, 3, 0, 7); c.fill();
+  });
+  T('icon_pasta', (c) => {
+    plateBase(c, 32, 40, 58);
+    c.strokeStyle = '#f3d27a'; c.lineWidth = 2.6;
+    for (let i = 0; i < 9; i++) { c.beginPath(); c.arc(32 + (i % 3 - 1) * 5, 36 + Math.floor(i / 3) * 2 - 2, 9 - (i % 4), i * 0.7, i * 0.7 + 4.2); c.stroke(); }
+    c.fillStyle = '#ff7a5c'; for (const [x, y] of [[24, 34], [40, 36], [33, 30]]) { c.beginPath(); c.ellipse(x, y, 4, 2.6, 0.5, 0, 7); c.fill(); }
+    c.fillStyle = '#3f9b4a'; for (const [x, y] of [[29, 38], [37, 33]]) { c.beginPath(); c.arc(x, y, 1.8, 0, 7); c.fill(); }
+  });
+  T('icon_salad', (c) => {
+    ell(c, 32, 44, 26, 12); c.fillStyle = '#d7dde3'; c.fill();
+    c.beginPath(); c.moveTo(6, 34); c.quadraticCurveTo(32, 66, 58, 34); c.closePath(); fillStroke(c, '#ffffff', '#a7b0ba', 1.3);
+    for (const [x, y, col] of [[18, 30, '#5cb85c'], [28, 26, '#7bd36b'], [40, 27, '#4aa84a'], [47, 32, '#69c35d'], [24, 34, '#8fe07a']]) { c.beginPath(); c.ellipse(x, y, 8, 5, 0.4, 0, 7); c.fillStyle = col; c.fill(); }
+    c.fillStyle = '#ff4f4f'; c.beginPath(); c.arc(36, 32, 3.5, 0, 7); c.fill(); c.beginPath(); c.arc(26, 30, 3, 0, 7); c.fill();
+    c.fillStyle = '#f7e2a0'; rr(c, 30, 26, 6, 5, 1); c.fill(); rr(c, 42, 30, 5, 5, 1); c.fill();
+  });
+  T('icon_pizza', (c) => {
+    c.beginPath(); c.arc(32, 34, 25, 0, 7); c.fillStyle = '#d99a4e'; c.fill(); c.strokeStyle = '#9a5f22'; c.lineWidth = 2; c.stroke();
+    c.beginPath(); c.arc(32, 34, 20, 0, 7); c.fillStyle = '#e8522f'; c.fill();
+    c.fillStyle = '#ffe9a8'; for (const [x, y, r] of [[24, 28, 6], [38, 26, 5], [34, 40, 6], [22, 40, 4], [44, 38, 4]]) { c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); }
+    c.fillStyle = '#3f9b4a'; for (const [x, y] of [[30, 32], [40, 33], [26, 36]]) { c.beginPath(); c.ellipse(x, y, 3, 1.6, 0.6, 0, 7); c.fill(); }
+    c.strokeStyle = 'rgba(120,60,20,0.5)'; c.lineWidth = 1.2; for (let a = 0; a < 6; a++) { c.beginPath(); c.moveTo(32, 34); c.lineTo(32 + Math.cos(a) * 24, 34 + Math.sin(a) * 24); c.stroke(); }
+  });
+  T('icon_dessert', (c) => {
+    plateBase(c, 32, 46, 52);
+    c.beginPath(); c.moveTo(16, 42); c.lineTo(16, 24); c.lineTo(46, 18); c.lineTo(46, 38); c.closePath(); c.fillStyle = '#5a2e1a'; c.fill();
+    c.beginPath(); c.moveTo(16, 24); c.lineTo(46, 18); c.lineTo(50, 21); c.lineTo(20, 27); c.closePath(); c.fillStyle = '#3a1c0f'; c.fill();
+    c.fillStyle = '#f5e6d0'; c.fillRect(16, 31, 30, 3);
+    c.fillStyle = '#e8263c'; c.beginPath(); c.arc(32, 17, 4.5, 0, 7); c.fill();
+    c.strokeStyle = '#3f9b4a'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(32, 13); c.lineTo(35, 9); c.stroke();
+  });
+  T('icon_drink', (c) => {
+    c.beginPath(); c.moveTo(14, 12); c.lineTo(50, 12); c.lineTo(34, 34); c.lineTo(30, 34); c.closePath();
+    c.fillStyle = lin(c, 0, 12, 0, 34, [[0, '#ff9a6a'], [1, '#e8455a']]); c.fill(); c.strokeStyle = '#ffffff'; c.lineWidth = 2; c.stroke();
+    c.fillStyle = 'rgba(255,255,255,0.35)'; c.beginPath(); c.moveTo(18, 14); c.lineTo(28, 14); c.lineTo(30, 20); c.closePath(); c.fill();
+    c.strokeStyle = '#e8e8e8'; c.lineWidth = 3; c.beginPath(); c.moveTo(32, 34); c.lineTo(32, 52); c.stroke();
+    ell(c, 32, 54, 11, 3.5); c.fillStyle = '#e8e8e8'; c.fill();
+    c.fillStyle = '#ffd23f'; c.beginPath(); c.arc(47, 13, 6, 0, 7); c.fill(); c.strokeStyle = '#e8a400'; c.lineWidth = 1.5; c.stroke();
+    c.strokeStyle = '#3f9b4a'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(24, 6); c.lineTo(30, 18); c.stroke();
+  });
+  T('icon_lounge', (c) => {
+    plateBase(c, 32, 46, 60);
+    c.beginPath(); c.moveTo(10, 44); c.quadraticCurveTo(10, 14, 32, 14); c.quadraticCurveTo(54, 14, 54, 44); c.closePath();
+    c.fillStyle = lin(c, 10, 14, 54, 44, [[0, '#f4f6f8'], [0.5, '#c4cbd3'], [1, '#8e979f']]); c.fill(); c.strokeStyle = '#6b737b'; c.lineWidth = 1.6; c.stroke();
+    c.fillStyle = 'rgba(255,255,255,0.7)'; c.beginPath(); c.ellipse(22, 26, 5, 9, 0.5, 0, 7); c.fill();
+    c.beginPath(); c.arc(32, 12, 4, 0, 7); c.fillStyle = '#d9b26a'; c.fill(); c.strokeStyle = '#8a6a2a'; c.stroke();
+  });
+  T('icon_ltable', (c) => {
+    ell(c, 32, 30, 26, 11); c.fillStyle = '#ffffff'; c.fill();
+    c.beginPath(); c.moveTo(6, 30); c.lineTo(10, 46); c.quadraticCurveTo(32, 54, 54, 46); c.lineTo(58, 30); c.closePath(); c.fillStyle = '#eef0f2'; c.fill(); c.strokeStyle = '#b8c0c8'; c.lineWidth = 1.4; c.stroke();
+    ell(c, 32, 30, 26, 11); c.strokeStyle = '#c9d0d6'; c.stroke();
+    rr(c, 30, 18, 4, 10, 2); c.fillStyle = '#f5f0e0'; c.fill();
+    c.fillStyle = '#ffcf5a'; c.beginPath(); c.ellipse(32, 16, 2.4, 4, 0, 0, 7); c.fill();
+    for (const x of [6, 58]) { rr(c, x - 6, 20, 12, 30, 5); c.fillStyle = '#b5523b'; c.fill(); }
+  });
+  T('icon_booth', (c) => {
+    rr(c, 6, 14, 52, 22, 10); c.fillStyle = '#1f6b52'; c.fill();
+    for (let i = 0; i < 4; i++) { rr(c, 9 + i * 12.5, 17, 10, 16, 4); c.fillStyle = '#2a8a6a'; c.fill(); }
+    rr(c, 4, 34, 56, 14, 6); c.fillStyle = '#1a5a45'; c.fill();
+    rr(c, 22, 44, 20, 14, 3); c.fillStyle = '#6b4226'; c.fill();
+  });
+  const person = (key, top, hat, extra) => T(key, (c) => {
+    rr(c, 13, 38, 38, 24, 11); c.fillStyle = top; c.fill(); c.strokeStyle = 'rgba(0,0,0,0.3)'; c.lineWidth = 2; c.stroke();
+    c.beginPath(); c.arc(32, 26, 14, 0, 7); c.fillStyle = '#7a4a2a'; c.fill(); c.stroke();
+    c.fillStyle = '#1b120c'; c.beginPath(); c.arc(32, 22, 14, Math.PI * 1.05, Math.PI * 1.95); c.fill();
+    c.fillStyle = '#20140e'; c.beginPath(); c.arc(27, 27, 1.8, 0, 7); c.arc(37, 27, 1.8, 0, 7); c.fill();
+    if (hat) hat(c);
+    if (extra) extra(c);
+  });
+  person('icon_host', '#1e1e24', null, (c) => { c.fillStyle = '#d9b26a'; rr(c, 40, 44, 9, 4, 1); c.fill(); c.fillStyle = '#ffffff'; c.beginPath(); c.moveTo(27, 38); c.lineTo(32, 48); c.lineTo(37, 38); c.fill(); });
+  person('icon_lwaiter', '#ffffff', null, (c) => { c.fillStyle = '#1e1e24'; rr(c, 17, 42, 9, 20, 3); c.fill(); rr(c, 38, 42, 9, 20, 3); c.fill(); c.fillStyle = '#1e1e24'; c.beginPath(); c.moveTo(28, 39); c.lineTo(32, 43); c.lineTo(36, 39); c.lineTo(32, 46); c.fill(); });
+  person('icon_busser', '#2f3a4a', null, (c) => { c.fillStyle = '#d7dde3'; ell(c, 48, 48, 10, 4); c.fill(); ell(c, 48, 45, 10, 4); c.fill(); });
+  person('icon_planner', '#7b2d8b', null, (c) => { rr(c, 40, 40, 14, 18, 2); c.fillStyle = '#fff6e0'; c.fill(); c.strokeStyle = '#7a6450'; c.lineWidth = 1; c.stroke(); c.fillStyle = '#e8455a'; c.fillRect(43, 44, 8, 2); c.fillRect(43, 49, 6, 2); });
+  person('icon_lmanager', '#2c3e66', null, (c) => { c.fillStyle = '#ffffff'; c.beginPath(); c.moveTo(27, 38); c.lineTo(32, 50); c.lineTo(37, 38); c.fill(); c.fillStyle = '#c0392b'; c.fillRect(31, 40, 2.5, 10); });
+  T('icon_chandelier', (c) => {
+    c.strokeStyle = '#b8913a'; c.lineWidth = 2; c.beginPath(); c.moveTo(32, 2); c.lineTo(32, 16); c.stroke();
+    ell(c, 32, 22, 22, 6); c.strokeStyle = '#d9b26a'; c.lineWidth = 3; c.stroke();
+    ell(c, 32, 34, 14, 4); c.stroke();
+    c.shadowColor = '#fff1b8'; c.shadowBlur = 10;
+    for (let i = 0; i < 9; i++) { const a = (i / 9) * Math.PI * 2; c.fillStyle = '#fff6d6'; c.beginPath(); c.ellipse(32 + Math.cos(a) * 22, 26 + Math.sin(a) * 6, 2.4, 5, 0, 0, 7); c.fill(); }
+    c.shadowBlur = 0;
+    for (let i = 0; i < 12; i++) { const a = (i / 12) * Math.PI * 2; c.fillStyle = 'rgba(220,235,255,0.9)'; c.beginPath(); c.moveTo(32 + Math.cos(a) * 14, 36); c.lineTo(32 + Math.cos(a) * 14 - 1.5, 44 + (i % 3) * 4); c.lineTo(32 + Math.cos(a) * 14 + 1.5, 44 + (i % 3) * 4); c.fill(); }
+  });
+  T('icon_band', (c) => {
+    c.save(); c.translate(32, 32); c.rotate(-0.6);
+    rr(c, -6, -28, 12, 30, 3); c.fillStyle = '#6b3f1f'; c.fill();
+    c.beginPath(); c.ellipse(0, 14, 13, 16, 0, 0, 7); c.fillStyle = '#c0392b'; c.fill(); c.strokeStyle = '#7a1a10'; c.lineWidth = 2; c.stroke();
+    c.beginPath(); c.arc(0, 12, 4, 0, 7); c.fillStyle = '#1e1e24'; c.fill();
+    c.strokeStyle = '#eeeeee'; c.lineWidth = 0.8; for (let i = -2; i <= 2; i++) { c.beginPath(); c.moveTo(i * 1.6, -26); c.lineTo(i * 1.6, 26); c.stroke(); }
+    c.restore();
+    c.fillStyle = '#d9b26a'; c.beginPath(); c.arc(50, 14, 4, 0, 7); c.fill(); c.fillRect(53, 2, 2, 12);
+  });
+  T('icon_art', (c) => {
+    rr(c, 6, 8, 52, 46, 3); c.fillStyle = '#c9a24a'; c.fill();
+    rr(c, 11, 13, 42, 36, 2); c.fillStyle = '#f4ead6'; c.fill();
+    c.fillStyle = '#e07a3a'; c.beginPath(); c.arc(24, 28, 9, 0, 7); c.fill();
+    c.fillStyle = '#1f6b52'; c.beginPath(); c.moveTo(11, 49); c.lineTo(30, 30); c.lineTo(53, 49); c.fill();
+    c.fillStyle = '#2c3e66'; c.fillRect(38, 18, 10, 14);
+  });
+  T('icon_party', (c) => {
+    rr(c, 12, 30, 40, 26, 4); c.fillStyle = '#ffffff'; c.fill(); c.strokeStyle = '#d9b26a'; c.lineWidth = 2; c.stroke();
+    rr(c, 12, 30, 40, 7, 3); c.fillStyle = '#ff7ab0'; c.fill();
+    for (const x of [22, 32, 42]) { rr(c, x - 1.5, 18, 3, 12, 1); c.fillStyle = '#7ec8ff'; c.fill(); c.fillStyle = '#ffcf5a'; c.beginPath(); c.ellipse(x, 15, 2.2, 3.5, 0, 0, 7); c.fill(); }
+    c.fillStyle = '#e8455a'; for (const [x, y] of [[8, 10], [56, 14], [50, 6], [12, 22]]) { c.fillRect(x, y, 3, 3); }
+  });
+  T('icon_fountain', (c) => {
+    ell(c, 32, 50, 26, 8); c.fillStyle = '#c9c2b4'; c.fill(); ell(c, 32, 48, 22, 6); c.fillStyle = '#5ec2ff'; c.fill();
+    rr(c, 28, 26, 8, 22, 2); c.fillStyle = '#d8d1c3'; c.fill();
+    ell(c, 32, 26, 12, 4); c.fillStyle = '#c9c2b4'; c.fill();
+    c.strokeStyle = '#9ad8ff'; c.lineWidth = 2.5;
+    for (const s of [-1, 1]) { c.beginPath(); c.moveTo(32, 18); c.quadraticCurveTo(32 + s * 14, 4, 32 + s * 20, 44); c.stroke(); }
+    c.beginPath(); c.moveTo(32, 22); c.lineTo(32, 6); c.stroke();
+  });
+  T('icon_terrace', (c) => {
+    c.beginPath(); c.moveTo(4, 26); c.quadraticCurveTo(32, -4, 60, 26); c.closePath(); c.fillStyle = '#f4ead6'; c.fill(); c.strokeStyle = '#c9a24a'; c.lineWidth = 2; c.stroke();
+    c.fillStyle = '#1f6b52'; for (let i = 0; i < 4; i++) { c.beginPath(); c.moveTo(4 + i * 14, 26); c.quadraticCurveTo(11 + i * 14, 14, 18 + i * 14, 26); c.fill(); }
+    c.strokeStyle = '#6b737b'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(32, 10); c.lineTo(32, 54); c.stroke();
+    ell(c, 32, 46, 18, 5); c.fillStyle = '#ffffff'; c.fill();
+  });
+  T('icon_vip', (c) => {
+    c.beginPath(); c.moveTo(8, 46); c.lineTo(12, 18); c.lineTo(24, 32); c.lineTo(32, 12); c.lineTo(40, 32); c.lineTo(52, 18); c.lineTo(56, 46); c.closePath();
+    c.fillStyle = lin(c, 0, 12, 0, 46, [[0, '#ffe58a'], [1, '#d9a21a']]); c.fill(); c.strokeStyle = '#8a6200'; c.lineWidth = 2; c.stroke();
+    rr(c, 8, 46, 48, 8, 3); c.fillStyle = '#d9a21a'; c.fill(); c.stroke();
+  });
+  T('icon_dish', (c) => { plateBase(c, 32, 40, 54); plateBase(c, 32, 32, 54); });
 }
 
 // shared painters for other modules (billboard ads paint their own faces)

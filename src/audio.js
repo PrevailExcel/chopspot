@@ -123,7 +123,14 @@ class AudioEngine {
       this.stepIdx = (this.stepIdx + 1) % 64;
     }
   }
+  /** 'afro' (default) or 'lounge' (smooth keys for the GRA Lounge) */
+  setStyle(style) {
+    if (this.style === style) return;
+    this.style = style;
+    if (this.ctx && this.musicTimer) { this.nextTime = this.ctx.currentTime + 0.1; this.stepIdx = 0; }
+  }
   playStep(i, t) {
+    if (this.style === 'lounge') { this.playLoungeStep(i, t); return; }
     const b = this.musicBus; const c = this.ctx;
     const s = i % 16;
     const mtof = (m) => 440 * Math.pow(2, (m - 69) / 12);
@@ -142,5 +149,23 @@ class AudioEngine {
     if (m) { this.tone(mtof(m), 0.25, { type: 'sine', vol: 0.32, at, bus: b }); this.tone(mtof(m) * 4, 0.06, { type: 'sine', vol: 0.06, at, bus: b }); }
   }
 }
+
+// smooth neo-soul loop: electric piano chords, walking bass, brushed hats
+AudioEngine.prototype.playLoungeStep = function playLoungeStep(i, t) {
+  const b = this.musicBus; const c = this.ctx; const at = t - c.currentTime;
+  const mtof = (m) => 440 * Math.pow(2, (m - 69) / 12);
+  const s = i % 16; const bar = Math.floor(i / 16) % 4;
+  // slower feel: only use every other 16th (the scheduler runs at 104 bpm)
+  if (i % 2) return;
+  const chords = [[60, 64, 67, 71], [57, 60, 64, 67], [62, 65, 69, 72], [55, 59, 62, 65]];
+  const roots = [36, 33, 38, 31];
+  if (s === 0 || s === 10) chords[bar].forEach((n, k) => { this.tone(mtof(n), 0.9, { type: 'sine', vol: 0.11, at: at + k * 0.012, bus: b }); this.tone(mtof(n) * 2, 0.35, { type: 'triangle', vol: 0.025, at: at + k * 0.012, bus: b }); });
+  const walk = [0, 7, 12, 10];
+  if (s % 4 === 0) this.tone(mtof(roots[bar] + walk[s / 4] + 12), 0.32, { type: 'sine', vol: 0.42, at, bus: b });
+  if (s === 0 || s === 8) this.tone(70, 0.2, { type: 'sine', vol: 0.5, slide: 0.5, at, bus: b });
+  this.noise(0.06, { vol: s % 8 === 4 ? 0.16 : 0.05, freq: 6000, q: 0.7, type: 'highpass', bus: b, time: t });
+  if (s === 4 || s === 12) this.noise(0.12, { vol: 0.12, freq: 2200, q: 1.2, bus: b, time: t });
+  if (s === 6 && bar % 2 === 1) this.tone(mtof(chords[bar][3] + 12), 0.4, { type: 'sine', vol: 0.06, at, bus: b });
+};
 
 export const Sound = new AudioEngine();

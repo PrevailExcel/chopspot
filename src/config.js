@@ -14,6 +14,13 @@ export const ITEMS = {
   bread: { name: 'Bread', price: 10, tex: 'item_bread', icon: 'icon_bread', h: 13 },
   malt: { name: 'Malt', price: 15, tex: 'item_malt', icon: 'icon_malt', h: 22 },
   dirty: { name: 'Dirty plate', price: 0, tex: 'item_dirty', icon: 'icon_dirty', h: 6 },
+  // GRA Lounge (continental menu)
+  steak: { name: 'Grilled steak', price: 90, tex: 'icon_steak', icon: 'icon_steak', h: 6, plural: 'grilled steaks' },
+  pasta: { name: 'Seafood pasta', price: 75, tex: 'icon_pasta', icon: 'icon_pasta', h: 6, plural: 'plates of seafood pasta' },
+  salad: { name: 'Caesar salad', price: 50, tex: 'icon_salad', icon: 'icon_salad', h: 6, plural: 'Caesar salads' },
+  pizza: { name: 'Pizza', price: 80, tex: 'icon_pizza', icon: 'icon_pizza', h: 6, plural: 'pizzas' },
+  dessert: { name: 'Chocolate cake', price: 45, tex: 'icon_dessert', icon: 'icon_dessert', h: 6, plural: 'slices of chocolate cake' },
+  drink: { name: 'Mocktail', price: 35, tex: 'icon_drink', icon: 'icon_drink', h: 8, plural: 'mocktails' },
 };
 
 export const PLAYER = {
@@ -180,6 +187,89 @@ export const BUKA_UPGRADES = [
   { id: 'safe', name: 'Bigger Cash Box', desc: 'Holds more while you\'re away', icon: 'icon_safe', base: 1500, mult: 1.7, max: 15, needs: 'cleaner' },
 ];
 
+// ---------- Branch 3: GRA Lounge (3D, high-end) ----------
+// Units match the other branches: 100 units = 1 metre on the floor. y grows towards the street.
+export const LOUNGE = {
+  bounds: { x1: 120, x2: 1880, y1: 230, y2: 1935 },
+  spawn: { x: 1000, y: 1820 },
+  door: { x: 1000, y: 1600 },
+  gate: { x: 1000, y: 1960 },
+  street: { y: 1985 },
+  passY: 570,          // top of the kitchen pass, where plated dishes wait
+  stationZoneY: 690,
+  producers: {
+    grill: { type: 'steak', x: 260, interval: 3.0, cap: 6, start: 3, kind: 'grill' },
+    pasta: { type: 'pasta', x: 480, interval: 2.8, cap: 6, start: 2, kind: 'pasta' },
+    salad: { type: 'salad', x: 700, interval: 2.2, cap: 6, start: 2, kind: 'salad' },
+    pizza: { type: 'pizza', x: 920, interval: 3.2, cap: 6, start: 2, kind: 'pizza' },
+    dessert: { type: 'dessert', x: 1140, interval: 2.4, cap: 6, start: 2, kind: 'dessert' },
+    bar: { type: 'drink', x: 1570, y: 520, zone: { x: 1470, y: 520 }, interval: 2.0, cap: 8, start: 3, kind: 'bar' },
+  },
+  tables: [
+    { id: 't1', x: 790, y: 800, seats: 4, kind: 'square' },
+    { id: 't2', x: 1210, y: 800, seats: 4, kind: 'square' },
+    { id: 't3', x: 790, y: 1060, seats: 2, kind: 'round' },
+    { id: 't4', x: 1210, y: 1060, seats: 4, kind: 'square' },
+    { id: 't5', x: 790, y: 1320, seats: 4, kind: 'square' },
+    { id: 't6', x: 1210, y: 1320, seats: 2, kind: 'round' },
+    { id: 'b1', x: 270, y: 1140, seats: 4, kind: 'booth' },
+    { id: 'b2', x: 270, y: 1400, seats: 4, kind: 'booth' },
+    { id: 't7', x: 700, y: 1770, seats: 2, kind: 'terrace', unlock: 'terrace' },
+    { id: 't8', x: 1300, y: 1770, seats: 2, kind: 'terrace', unlock: 'terrace' },
+  ],
+  host: { x: 1170, y: 1510, zone: { x: 1170, y: 1440, r: 52 } },
+  till: { x: 1300, y: 1520 },
+  booth: { x: 830, y: 1515, zone: { x: 830, y: 1440, r: 50 } },
+  dishReturn: { x: 1370, y: 575, zone: { x: 1370, y: 680, r: 52 } },
+  queue: [{ x: 1000, y: 1690 }, { x: 1000, y: 1775 }, { x: 1000, y: 1860 }, { x: 1000, y: 1950 }, { x: 1000, y: 2040 }],
+  eventTable: { x: 1690, y: 1270 },
+  stage: { x: 300, y: 800 },
+  guests: { spawnEvery: 16, speed: 120, read: [2.5, 4], eat: [9, 13], patience: 70, queuePatience: 45, tip: [0.08, 0.2] },
+  booking: {
+    label: 'A birthday party', bayText: 'Serve the party at the event table',
+    firstDelay: 20, cooldown: [55, 85], bonus: 1.8, wait: 70, waitPerItem: 4,
+  },
+};
+
+export const LOUNGE_UNLOCKS = [
+  { id: 'pasta', name: 'Pasta Station', cost: 1500, x: 480, y: 690, icon: 'icon_pasta' },
+  { id: 't3', name: 'Table for Two', cost: 1800, x: 790, y: 1060, icon: 'icon_ltable' },
+  { id: 'booth', name: 'Upgrade Desk', cost: 2200, x: 830, y: 1500, icon: 'icon_up' },
+  { id: 'bar', name: 'Cocktail Bar', sub: 'Sells mocktails', cost: 3000, x: 1470, y: 520, icon: 'icon_drink' },
+  { id: 'host', name: 'Hire Ifeoma', sub: 'Host: seats guests', cost: 4000, x: 1340, y: 1420, icon: 'icon_host' },
+  { id: 't4', name: 'Table 4', cost: 4500, x: 1210, y: 1060, icon: 'icon_ltable' },
+  { id: 'salad', name: 'Salad Station', cost: 5500, x: 700, y: 690, icon: 'icon_salad' },
+  { id: 'waiter1', name: 'Hire Chidi', sub: 'Waiter', cost: 6500, x: 1000, y: 940, icon: 'icon_lwaiter' },
+  { id: 'b1', name: 'Velvet Booth', cost: 7500, x: 270, y: 1140, icon: 'icon_booth' },
+  { id: 'dessert', name: 'Pastry Station', cost: 9000, x: 1140, y: 690, icon: 'icon_dessert' },
+  { id: 'busser', name: 'Hire Emeka', sub: 'Clears tables', cost: 10000, x: 560, y: 1250, icon: 'icon_busser' },
+  { id: 'chandelier', name: 'Crystal Chandelier', sub: 'Guests pay 6% more', cost: 12000, x: 1000, y: 1080, icon: 'icon_chandelier' },
+  { id: 't5', name: 'Table 5', cost: 13000, x: 790, y: 1320, icon: 'icon_ltable' },
+  { id: 'pizza', name: 'Pizza Oven', cost: 15000, x: 920, y: 690, icon: 'icon_pizza' },
+  { id: 'waiter2', name: 'Hire Adaeze', sub: 'Waiter', cost: 17000, x: 1000, y: 940, icon: 'icon_lwaiter' },
+  { id: 'band', name: 'Live Band', sub: 'More guests, +8% prices', cost: 20000, x: 300, y: 810, icon: 'icon_band' },
+  { id: 't6', name: 'Table for Two', cost: 22000, x: 1210, y: 1320, icon: 'icon_ltable' },
+  { id: 'b2', name: 'Velvet Booth 2', cost: 25000, x: 270, y: 1400, icon: 'icon_booth' },
+  { id: 'events', name: 'Event Table', sub: 'Birthday & dinner bookings', cost: 28000, x: 1690, y: 1270, icon: 'icon_party' },
+  { id: 'planner', name: 'Hire Tobi', sub: 'Event planner', cost: 32000, x: 1560, y: 1060, icon: 'icon_planner' },
+  { id: 'art', name: 'Gallery Wall', sub: 'Guests pay 6% more', cost: 36000, x: 440, y: 1500, icon: 'icon_art' },
+  { id: 'manager', name: 'Hire Mrs. Eze', sub: 'Manager', cost: 40000, x: 600, y: 1500, icon: 'icon_lmanager' },
+  { id: 'terrace', name: 'Garden Terrace', sub: '2 outdoor tables', cost: 48000, x: 700, y: 1770, icon: 'icon_terrace' },
+  { id: 'fountain', name: 'Fountain & Lights', sub: 'The finest spot in Aba', cost: 60000, x: 380, y: 1790, icon: 'icon_fountain' },
+];
+
+export const LOUNGE_UPGRADES = [
+  { id: 'carry', name: 'Silver Tray', desc: 'Carry +1 dish', icon: 'icon_tray', base: 1500, mult: 1.42, max: 20 },
+  { id: 'speed', name: 'Leather Loafers', desc: 'Walk 6% faster', icon: 'icon_shoe', base: 1800, mult: 1.45, max: 15, step: 0.06 },
+  { id: 'cook', name: 'Pro Kitchen', desc: 'Cook 10% faster', icon: 'icon_fire', base: 2000, mult: 1.45, max: 20 },
+  { id: 'price', name: 'Chef\'s Signature', desc: 'Prices +15%', icon: 'icon_star', base: 2500, mult: 1.55, max: 40 },
+  { id: 'patience', name: 'Air Conditioning', desc: 'Guests wait 10% longer', icon: 'icon_fan', base: 3000, mult: 1.6, max: 12 },
+  { id: 'staff', name: 'Staff Training', desc: 'Staff 12% faster', icon: 'icon_lwaiter', base: 4000, mult: 1.5, max: 20, needs: 'waiter1' },
+  { id: 'safe', name: 'Bigger Safe', desc: 'Holds more while you\'re away', icon: 'icon_safe', base: 8000, mult: 1.7, max: 15, needs: 'busser' },
+];
+// decor that lifts prices ("ambience")
+export const LOUNGE_AMBIENCE = { chandelier: 0.06, band: 0.08, art: 0.06, fountain: 0.1, terrace: 0.04 };
+
 // Branch directory: name, how it is opened, how it earns while you're elsewhere.
 export const BRANCHES = {
   stand: {
@@ -198,8 +288,17 @@ export const BRANCHES = {
     automation: { waiter1: 0.3, waiter2: 0.2, cleaner: 0.3, kloader: 0.1, generator: 0.1 },
     baseRate: 9, capBase: 8000,
   },
+  lounge: {
+    key: 'lounge', name: 'GRA Lounge', full: 'GRA Lounge', area: 'GRA', icon: 'icon_lounge',
+    unlocks: LOUNGE_UNLOCKS, upgrades: LOUNGE_UPGRADES,
+    cost: 25000, requires: 'generator', requiresBranch: 'buka', requiresText: 'Install the Generator & Lights at your Ariaria Buka first',
+    pitch: 'A high-end restaurant in GRA, in full 3D. Seat your guests, serve a continental menu, book parties and bring in a live band.',
+    goalScale: 15, xpScale: 1,
+    automation: { host: 0.15, waiter1: 0.25, waiter2: 0.2, busser: 0.25, planner: 0.1, manager: 0.05 },
+    baseRate: 38, capBase: 40000,
+  },
 };
-export const BRANCH_ORDER = ['stand', 'buka'];
+export const BRANCH_ORDER = ['stand', 'buka', 'lounge'];
 
 export const COLORS = {
   grass: 0x7cc35a,

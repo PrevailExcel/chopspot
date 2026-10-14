@@ -26,19 +26,37 @@ export const Haptic = {
 };
 
 const KEY = 'puffzobo.save.v1';
+
+/** ?demo=gra opens straight into the GRA Lounge with some cash; nothing is saved (the real save is untouched). */
+/* global __DEMO_DEFAULT__ */
+export const DEMO = (() => {
+  try { const q = new URLSearchParams(location.search).get('demo'); if (q) return q === 'off' ? null : q; } catch (e) { /* ignore */ }
+  return typeof __DEMO_DEFAULT__ !== 'undefined' && __DEMO_DEFAULT__ ? __DEMO_DEFAULT__ : null;
+})();
+function demoSave(real) {
+  return {
+    v: 2, cash: 20000, branch: 'lounge', owned: { stand: true, buka: true, lounge: true }, profile: real && real.profile ? real.profile : null,
+    branches: { stand: { unlocked: { fryer1: true, sign: true }, tut: 9 }, buka: { unlocked: { jollof: true, t1: true, t2: true, generator: true }, tut: 9 }, lounge: {} },
+    settings: real && real.settings ? real.settings : { sfx: true, music: true, haptic: true }, stats: { served: 0, earned: 0, buses: 0, start: Date.now() }, t: Date.now(),
+  };
+}
+
 // Storage can be unavailable (private mode, sandboxed previews); the game must still run.
 let memoryFallback = null;
+let demoState = null;
 export const Store = {
   load() {
-    try {
-      const raw = localStorage.getItem(KEY);
-      return raw ? JSON.parse(raw) : null;
-    } catch (e) { return memoryFallback; }
+    let real = null;
+    try { const raw = localStorage.getItem(KEY); real = raw ? JSON.parse(raw) : null; } catch (e) { real = memoryFallback; }
+    if (DEMO === 'gra') return demoState || (demoState = demoSave(real));
+    return real;
   },
   save(data) {
+    if (DEMO) { demoState = data; return; }
     try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) { memoryFallback = data; }
   },
   clear() {
+    if (DEMO) { demoState = null; return; } // never wipe the real save from a demo visit
     try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ }
     memoryFallback = null;
   },
