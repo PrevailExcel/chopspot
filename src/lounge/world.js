@@ -266,15 +266,13 @@ export class World {
   }
 
   buildInteriorStatic() {
-    // pass, dish return and the kitchen line behind it
+    // the pass, and the kitchen line behind it. The gap at the east end is the way into the kitchen.
     const k2 = this.kit();
-    k2.frame(7.25, 0, 5.75, 0, () => P.pass(k2, 11.9));
-    this.col(100, 540, 1420, 605);
-    k2.frame(13.7, 0, 5.75, 0, () => P.dishReturn(k2));
-    k2.box(12.8, 0.9, 0.6, [7.6, 0.45, 2.35], '#202326', 'metal');
-    k2.box(12.8, 0.05, 0.64, [7.6, 0.93, 2.35], PAL.marble, 'gloss');
-    for (let i = 0; i < 8; i++) k2.cyl(0.1, 0.22, [2 + i * 1.5, 1.07, 2.3], PAL.steel, 'metal', 12);
-    for (let i = 0; i < 5; i++) { k2.box(2.2, 0.04, 0.32, [2.2 + i * 2.6, 1.95, 2.14], PAL.walnut, 'satin'); k2.box(2.1, 0.015, 0.02, [2.2 + i * 2.6, 1.925, 2.26], PAL.bulb, 'glow'); }
+    k2.frame(6.75, 0, 5.75, 0, () => P.pass(k2, 10.9));
+    this.col(100, 540, 1222, 605);
+    k2.frame(6.5, 0, 2.35, 0, () => P.backLine(k2, 10.4));
+    for (let i = 0; i < 7; i++) k2.cyl(0.1, 0.22, [2 + i * 1.5, 1.07, 2.3], PAL.steel, 'metal', 12);
+    for (let i = 0; i < 4; i++) { k2.box(2.2, 0.04, 0.32, [2.2 + i * 2.6, 1.95, 2.14], PAL.walnut, 'satin'); k2.box(2.1, 0.015, 0.02, [2.2 + i * 2.6, 1.925, 2.26], PAL.bulb, 'glow'); }
     // copper pans on a rail
     k2.cyl(0.015, 12.4, [7.6, 2.55, 2.2], PAL.brass, 'metal', 8, [0, 0, Math.PI / 2]);
     for (let i = 0; i < 16; i++) { const x = 1.8 + i * 0.78; k2.cyl(0.006, 0.18, [x, 2.45, 2.2], PAL.brass, 'metal', 4); k2.cyl(0.12 + (i % 3) * 0.03, 0.03, [x, 2.25 - (i % 3) * 0.04, 2.24], '#b8643c', 'metal', 14, [Math.PI / 2, 0, 0]); }
@@ -304,7 +302,56 @@ export class World {
     for (const [x, z, w, d] of [[10, 6.25, 18, 0.5], [1.2, 11, 0.5, 10], [18.8, 9, 0.5, 14]]) this.shadow(x, z, w / 2, d / 2);
     // bar (always there; it becomes usable when unlocked)
     this.buildBarShell();
-    // kitchen staff appear with each station; a dishwasher is always there
+    this.buildScullery();
+  }
+
+  // ---------------- the scullery (dish pit) and the kitchen door ----------------
+  buildScullery() {
+    const k = this.kit();
+    k.frame(12.65, 0, 2.35, 0, () => P.sinkUnit(k, 1.3));
+    k.frame(13.85, 0, 3.8, 0, () => P.plateRack(k));
+    // door header with a small sign
+    k.box(2.0, 0.22, 0.26, [13.22, 2.3, 5.75], PAL.walnutDark, 'satin');
+    k.box(2.02, 0.025, 0.28, [13.22, 2.18, 5.75], PAL.brass, 'metal');
+    k.box(0.06, 2.3, 0.26, [14.18, 1.15, 5.75], PAL.walnutDark, 'satin');
+    this.done(k);
+    const dc = this.kit(); this.dryCounter = new THREE.Group(); this.root.add(this.dryCounter);
+    dc.frame(13.7, 0, 2.35, 0, () => P.dryingCounter(dc)); dc.build(this.dryCounter, { shadows: this.tier.shadows });
+    this.col(1195, 200, 1415, 268);
+    this.col(1355, 325, 1415, 435);
+    this.signPlane(1.1, 0.2, [13.22, 2.3, 5.89], 0, () => 'KITCHEN', { size: 90, color: '#e7c97a' });
+    this.signPlane(1.0, 0.26, [12.65, 1.75, 2.1], 0, () => 'WASH-UP', { size: 90, color: '#bfe8ff' }, this.wallN);
+    this.pool(12.9, 2.9, 1.1, 0xbfe4ff, 0.45);
+    this.pool(13.85, 3.8, 0.8, 0xffe2b0, 0.35);
+    this.shadow(13.85, 3.8, 0.4, 0.6);
+    this.shadow(13.0, 2.4, 1.2, 0.45);
+    // swinging cafe doors
+    this.kDoors = [];
+    for (const [hx, flip] of [[12.27, false], [14.13, true]]) {
+      const kd = this.kit(); const g = new THREE.Group(); g.position.set(hx, 0, 5.75); g.rotation.y = flip ? Math.PI : 0;
+      kd.frame(0, 0, 0, 0, () => P.swingLeaf(kd, 0.92)); kd.build(g, { shadows: false });
+      this.root.add(g); this.kDoors.push({ g, flip });
+    }
+    this.kDoorOpen = 0; this.kDoorBusy = false;
+  }
+  /** where clean plate number i sits on the rack (three shelves, three stacks each) */
+  rackPos(i) {
+    const s = Math.floor(i / 4) % 9; const shelf = Math.floor(s / 3); const col = s % 3;
+    return new THREE.Vector3(13.85, [1.18, 0.76, 0.34][shelf] + 0.014 + (i % 4) * 0.022, 3.8 - 0.3 + col * 0.3);
+  }
+  /** where dirty plate number i waits on the drainboard */
+  sinkPos(i) {
+    const col = i % 2; const lvl = Math.floor(i / 2);
+    return new THREE.Vector3(12.13 + col * 0.18, 0.92 + lvl * 0.024, 2.4 + (lvl % 2) * 0.03);
+  }
+  /** the dishwasher machine (unlock "machine") */
+  buildMachine(ghost = false) {
+    const g = new THREE.Group(); this.root.add(g);
+    const k = this.kit();
+    k.frame(13.72, 0, 2.38, 0, () => P.dishMachine(k));
+    k.build(g, { shadows: this.tier.shadows, ghost });
+    if (!ghost) this.dryCounter.visible = false;
+    return g;
   }
 
   buildBarShell() {
@@ -604,6 +651,13 @@ export class World {
     this.doorOpen += ((near || this.doorHold > 0 ? 1 : 0) - this.doorOpen) * Math.min(1, dt * 6);
     this.doorHold = Math.max(0, (this.doorHold || 0) - dt);
     this.doors.forEach((d, i) => { d.position.x = 10 + (i === 0 ? -0.4 - this.doorOpen * 0.75 : 0.4 + this.doorOpen * 0.75); });
+    // kitchen cafe doors swing when someone walks through
+    if (this.kDoors) {
+      this.kDoorOpen += ((this.kDoorBusy ? 1 : 0) - this.kDoorOpen) * Math.min(1, dt * (this.kDoorBusy ? 9 : 3));
+      const wob = this.kDoorBusy ? 0 : Math.sin(this.t * 9) * 0.12 * this.kDoorOpen;
+      this.kDoors.forEach(({ g, flip }) => { g.rotation.y = (flip ? Math.PI : 0) + (flip ? 1 : -1) * (this.kDoorOpen * 1.35 + wob); });
+    }
+    this.t = (this.t || 0) + dt;
     // traffic
     this.carTimer -= dt;
     if (this.carTimer <= 0) { this.carTimer = 5 + Math.random() * 9; if (this.cars.length < 4) this.spawnCar(); }

@@ -753,7 +753,7 @@ export default class UIScene extends Phaser.Scene {
       this.card(card, w, h, 'How to play here', 0x1d4537);
       const rows = [
         ['walk', 'Walk', 'Drag anywhere to walk, or just tap where you want to go.'],
-        ['ring', 'Use things', 'Step into a glowing ring to pick up dishes, seat guests and serve tables. Labels show what needs you.'],
+        ['ring', 'Use things', 'Step into a glowing ring to seat guests, pick up dishes and serve. Clear plates and wash them at the kitchen sink. Follow the arrow.'],
         ['look', 'Look around', 'Pinch to zoom. Twist two fingers to turn. Tap the eye button to explore the whole place.'],
       ];
       rows.forEach(([kind, title, body], i) => {

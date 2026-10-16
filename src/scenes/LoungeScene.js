@@ -69,13 +69,42 @@ export default class LoungeScene extends BranchScene {
     this.partySeq = 0;
     const E = this.E;
     this.hostZone = new E.Zone3D(this.ctx, LOUNGE.host.zone, { color: 0xd9b26a });
-    this.returnZone = new E.Zone3D(this.ctx, LOUNGE.dishReturn.zone, { color: 0x5ec2ff });
-    this.returnPile = new E.Pile3D(this.ctx, 'dirty', (i) => E.toV(LOUNGE.dishReturn.x - 30 + (i % 5) * 14, 557, 117 + Math.floor(i / 5) * 3), { maxVisual: 20 });
+    // the scullery: dirty plates wait by the sink; washed ones go on the rack for the chefs
+    this.sinkZone = new E.Zone3D(this.ctx, LOUNGE.sink.zone, { color: 0x5ec2ff });
+    this.sinkPile = new E.Pile3D(this.ctx, 'dirty', (i) => this.world.sinkPos(i), { maxVisual: 24 });
+    this.rackPile = new E.Pile3D(this.ctx, 'clean', (i) => this.world.rackPos(i), { maxVisual: 36 });
+    this.washT = 0; this.refillCool = 4;
+    this.setupFx();
     const T = LOUNGE.till;
     this.tillCash = this.addCashPile(T.x - 14, T.y - 4, { h: 105, maxVisual: 18, unit: 300, zoneR: 78, cols: 3 });
     this.world.hour = this.b.hour ?? 17.4;
     this.ctx.view.camMode = this.b.camMode || 'overview';
     this.ctx.view.show(true);
+  }
+
+  /** steam over the sink while plates are washed */
+  setupFx() {
+    const fx = this.ctx.fx; const S = LOUNGE.sink;
+    fx.emitter('steam', S.x + 25, S.y + 5, 96, 5, () => this.sinkPile.count > 0 && (this.player.busy === 'wash' || this.helpers.some((h) => h.washing)), { spread: 0.4 });
+  }
+  machineFx() {
+    const fx = this.ctx.fx;
+    fx.emitter('steam', 1372, 245, 160, 4, () => this.sinkPile.count > 0 || this.ctx.time % 12 < 3, { spread: 0.5, mul: 1.3 });
+  }
+  /** hot food on a table steams while the guests eat */
+  updateTableSteam(dt) {
+    this.steamT = (this.steamT || 0) - dt; if (this.steamT > 0) return; this.steamT = 0.35;
+    for (const t of this.tables) {
+      if (!t.party || t.party.state !== 'eating' || !t.dishes.length) continue;
+      const d = t.dishes[Math.floor(Math.random() * t.dishes.length)];
+      if (d && d.active && d.type !== 'drink' && d.type !== 'salad' && d.type !== 'dessert') this.ctx.fx.puff('steam', d.pos.x, d.pos.y + 0.05, d.pos.z, 0.6);
+    }
+  }
+
+  updateKitchenDoor() {
+    const D = LOUNGE.kitchenDoor;
+    const near = (w) => w && Math.abs(w.x - D.x) < 120 && Math.abs(w.y - D.y) < 95;
+    this.world.kDoorBusy = near(this.player) || this.helpers.some((h) => near(h.w));
   }
 
   syncColliders() { const W = this.world; while (this.colSynced < W.colliders.length) this.addCollider(W.colliders[this.colSynced++]); }
@@ -111,6 +140,7 @@ export default class LoungeScene extends BranchScene {
     else if (id === 'band') { group = W.buildStage(); }
     else if (id === 'art') group = W.buildArt();
     else if (id === 'fountain') group = W.buildFountain();
+    else if (id === 'machine') { group = W.buildMachine(); this.machineFx(); }
     else if (id === 'events') {
       const ev = { id: 'ev', x: LOUNGE.eventTable.x, y: LOUNGE.eventTable.y, kind: 'event' };
       const built = W.buildTable(ev); group = built.group;
@@ -124,6 +154,7 @@ export default class LoungeScene extends BranchScene {
         waiter1: () => new Waiter(this, 'Chidi', 11, 'm', { x: 1000, y: 900 }),
         waiter2: () => new Waiter(this, 'Adaeze', 23, 'f', { x: 1000, y: 1150 }),
         busser: () => new Busser(this),
+        washer: () => new Washer(this),
         planner: () => new Planner(this),
         manager: () => new Manager(this),
       }[id];
@@ -145,6 +176,7 @@ export default class LoungeScene extends BranchScene {
     if (id === 'band') return W.buildStage(true);
     if (id === 'art') return W.buildArt(true);
     if (id === 'fountain') return W.buildFountain(true);
+    if (id === 'machine') return W.buildMachine(true);
     if (id === 'events') return W.buildTable({ id: 'ev', x: LOUNGE.eventTable.x, y: LOUNGE.eventTable.y, kind: 'event' }, true).group;
     return null;
   }
@@ -164,6 +196,7 @@ export default class LoungeScene extends BranchScene {
     t.dishPos = (i) => { const s = t.seats[i % t.seats.length]; return E.toV(cx + (s.x - cx) * 0.55, cy + (s.y - cy) * 0.55, topH + Math.floor(i / t.seats.length) * 2.5); };
     t.plates = new E.Pile3D(this.ctx, 'dirty', (i) => t.dishPos(i), { maxVisual: 16 });
     t.cash = this.addCashPile(cx, cy, { h: topH, maxVisual: 6, unit: 120, zoneR: def.kind === 'booth' ? 140 : 128, cols: 2 });
+    if (def.kind === 'square' || def.kind === 'round') this.ctx.fx.emitter('flame', cx, cy, 88.5, 9, () => true, { mul: 0.9 });
     this.tables.push(t);
     this.syncColliders();
     if (animate) this.ctx.pop(built.group, 0.6);
@@ -171,6 +204,8 @@ export default class LoungeScene extends BranchScene {
   }
 
   restore() {
+    this.rackPile.add(Math.min(this.platesCap(), this.b.rack ?? this.platesCap()), false);
+    this.sinkPile.add(this.b.sink || 0, false);
     const tb = this.b.tables || {};
     this.tables.forEach((t) => { const s = tb[t.id] || {}; if (s.plates) t.plates.add(s.plates, false); if (s.cash) t.cash.restore(s.cash); });
     const pl = this.b.piles || {};
@@ -182,6 +217,7 @@ export default class LoungeScene extends BranchScene {
     this.b.tables = {};
     this.tables.forEach((t) => { this.b.tables[t.id] = { plates: t.plates.count + t.dishes.length, cash: t.cash.value }; });
     this.b.hour = Math.round(this.world.hour * 100) / 100;
+    this.b.rack = this.rackPile.count; this.b.sink = this.sinkPile.count;
     this.b.camMode = this.ctx.view.camMode;
   }
 
@@ -395,7 +431,7 @@ export default class LoungeScene extends BranchScene {
   walkTo(gx, gy) {
     const cands = [
       { x: this.hostZone.cx, y: this.hostZone.cy },
-      { x: this.returnZone.cx, y: this.returnZone.cy },
+      { x: this.sinkZone.cx, y: this.sinkZone.cy },
       ...Object.values(this.producers).map((p) => ({ x: p.zone.cx, y: p.zone.cy })),
       ...this.tables.map((t) => t.service),
       ...this.pads.map((p) => ({ x: p.x, y: p.y })),
@@ -436,7 +472,11 @@ export default class LoungeScene extends BranchScene {
       if (q && q.state === 'ordered' && this.partyTypes(q).some((k) => this.partyNeeds(q, k) > 0 && p.countOf(k) > 0)) want.push(['t:' + t.id, t.service.x, t.service.y, 120, 'SERVE', '#2bb34a']);
       else if (!q && (t.plates.count > 0 || t.cash.value > 0) && away(t.service.x, t.service.y)) want.push(['t:' + t.id, t.x, t.y, 120, t.plates.count > 0 ? 'CLEAR' : 'COLLECT', t.plates.count > 0 ? '#7b4fd6' : '#2f9a55']);
     }
-    if (p.countOf('dirty') > 0 && away(this.returnZone.cx, this.returnZone.cy)) want.push(['ret', this.returnZone.cx, this.returnZone.cy, 150, 'RETURN PLATES', '#0f8b8d']);
+    const sz = this.sinkZone;
+    if (p.countOf('dirty') > 0 && away(sz.cx, sz.cy)) want.push(['sink', LOUNGE.sink.x, LOUNGE.sink.y + 20, 175, 'TO THE SINK', '#0f8b8d']);
+    else if (this.sinkPile.count > 0 && !this.isUnlocked('washer') && away(sz.cx, sz.cy)) want.push(['sink', LOUNGE.sink.x, LOUNGE.sink.y + 20, 175, this.rackPile.count < 4 ? 'WASH PLATES!' : 'WASH PLATES', this.rackPile.count < 4 ? '#d64545' : '#0f8b8d']);
+    if (Object.values(this.producers).some((pr) => pr.noPlates)) want.push(['noplates', 700, 520, 215, 'NO CLEAN PLATES', '#d64545']);
+    for (const g of this.parties) if (g.greet > 0 && g.table && away(g.table.service.x, g.table.service.y)) want.push(['greet:' + g.id, g.table.x, g.table.y, 120, 'GREET', '#c98a1a']);
     if (this.tillCash.value > 0 && away(LOUNGE.till.x, LOUNGE.till.y, 110)) want.push(['till', LOUNGE.till.x, LOUNGE.till.y, 150, 'COLLECT', '#2f9a55']);
     const keys = new Set(want.map((w) => w[0] + w[4]));
     for (const [k, s] of this.labels) if (!keys.has(k)) { s.removeFromParent(); s.material.map.dispose(); s.material.dispose(); this.labels.delete(k); }
@@ -487,6 +527,7 @@ export default class LoungeScene extends BranchScene {
       { kind: 'item:dessert', text: (n) => `Serve ${n} slices of chocolate cake`, target: (t) => 5 + 3 * t, ok: sells('dessert') },
       { kind: 'item:drink', text: (n) => `Serve ${n} mocktails`, target: (t) => 8 + 4 * t, ok: sells('drink') },
       { kind: 'clean', text: (n) => `Clear ${n} tables`, target: (t) => 5 + 2 * t },
+      { kind: 'greet', text: (n) => `Greet ${n} table${n > 1 ? 's' : ''} that ask for the owner`, target: (t) => 2 + t, ok: !this.isUnlocked('manager') },
       { kind: 'vip', text: (n) => `Serve ${n} VIP table${n > 1 ? 's' : ''}`, target: (t) => 1 + Math.floor(t / 2), ok: this.b.fame.lvl >= 3, weight: 1.5 },
       { kind: 'vehicle', text: (n) => `Host ${n} party booking${n > 1 ? 's' : ''}`, target: (t) => 1 + Math.floor(t / 3), ok: has('events'), weight: 1.5 },
       { kind: 'streak', text: (n) => `Serve ${n} tables in a row with no walkouts`, target: (t) => 4 + 2 * t, weight: 1.3 },
@@ -608,10 +649,40 @@ export default class LoungeScene extends BranchScene {
       p.patience = null;
       p.bubble.set([{ icon: 'icon_happy', n: null }], { vip: p.vip }); p.bubble.setBar(null); p.bubble.pulse();
       p.members.forEach((m, i) => { m.person.action = i % 3 === 2 ? 'talk' : 'eat'; });
-      this.time.delayedCall(1400, () => { if (p.state === 'eating') p.bubble.show(false); });
+      this.time.delayedCall(1400, () => { if (p.state === 'eating' && !(p.greet > 0)) p.bubble.show(false); });
+      this.time.delayedCall(2600, () => this.maybeGreet(p));
       Sound.play('happy');
       if (p.claimedBy) p.claimedBy.release(p);
       if (this.b.tut <= 2) this.b.tut = 3;
+    }
+  }
+
+  /** sometimes a table asks to meet the owner: walk over for a bigger tip */
+  maybeGreet(p) {
+    if (p.state !== 'eating' || !this.tutorialDone() || p.greet != null) return;
+    if (this.parties.filter((q) => q.greet > 0).length >= 2) return;
+    if (Math.random() > (p.vip ? 0.75 : 0.42)) { p.greet = 0; return; }
+    p.greet = 20; p.eat += 8;
+    p.bubble.set([{ icon: 'icon_greet', n: null }], { vip: p.vip }); p.bubble.show(true); p.bubble.pulse();
+    p.members[0].person.action = 'wave';
+    Sound.play('pop');
+  }
+  ownerWord() { return this.gs.profile && this.gs.profile.gender !== 'guy' ? 'Madam' : 'Oga'; }
+  checkGreet() {
+    const pl = this.player;
+    for (const p of this.parties) {
+      if (!(p.greet > 0) || !p.table) continue;
+      if (Math.hypot(pl.x - p.table.service.x, pl.y - p.table.service.y) > 120 && !p.table.zone.contains(pl.x, pl.y)) continue;
+      p.greet = 0; p.greeted = true;
+      p.members.forEach((m, i) => { m.person.action = i === 0 ? 'clap' : 'talk'; });
+      this.time.delayedCall(1800, () => { if (p.state === 'eating') p.members.forEach((m, i) => { m.person.action = i % 3 === 2 ? 'talk' : 'eat'; }); });
+      p.bubble.set([{ icon: 'icon_happy', n: null }], { vip: p.vip }); p.bubble.pulse();
+      this.time.delayedCall(1500, () => { if (p.state === 'eating') p.bubble.show(false); });
+      const lines = [`Thank you, ${this.ownerWord()}!`, `${this.ownerWord()}, this food is top!`, 'Best spot in Aba!', `God bless you, ${this.ownerWord()}!`];
+      this.floatAt(p.table.x, p.table.y, 70, lines[Math.floor(Math.random() * lines.length)], '#ffe58a', 22);
+      this.ctx.fx.burst('sparkle', p.table.x, p.table.y, 120, 14);
+      this.addXP(3); this.track('greet', 1);
+      Sound.play('happy'); Haptic.tap('medium');
     }
   }
 
@@ -619,9 +690,10 @@ export default class LoungeScene extends BranchScene {
     const t = p.table;
     const food = this.partyTypes(p).reduce((n, k) => n + ITEMS[k].price * p.order[k], 0);
     const tipF = LOUNGE.guests.tip[0] + (LOUNGE.guests.tip[1] - LOUNGE.guests.tip[0]) * (p.tipFrac ?? 0.5);
-    const total = Math.round(food * this.priceMult() * (1 + tipF) * (p.vip ? 2.2 : 1));
+    const total = Math.round(food * this.priceMult() * (1 + tipF + (p.greeted ? 0.35 : 0)) * (p.vip ? 2.2 : 1));
     t.cash.deposit(total, { x: t.x, y: t.y, z: 130 });
-    this.floatAt(t.x, t.y, 60, `${p.vip ? 'VIP ' : ''}+${money(total)}`, p.vip ? '#ffe58a' : '#bdf7a8', p.vip ? 28 : 24);
+    this.floatAt(t.x, t.y, 60, `${p.vip ? 'VIP ' : ''}${p.greeted ? 'Big tip! ' : ''}+${money(total)}`, p.vip ? '#ffe58a' : '#bdf7a8', p.vip ? 28 : 24);
+    if ((p.tipFrac ?? 0) > 0.7) this.time.delayedCall(350, () => this.floatAt(t.x, t.y, 120, 'Perfect service!', '#bdf7ff', 18));
     // plates stay behind to be cleared
     const n = t.dishes.length; t.dishes.forEach((d) => d.destroy()); t.dishes = [];
     t.plates.add(n, true);
@@ -668,9 +740,9 @@ export default class LoungeScene extends BranchScene {
     const seats = this.tables.reduce((n, t) => n + t.seats.length, 0);
     this.spawnTimer -= dt;
     if (this.spawnTimer <= 0) {
-      this.spawnTimer = G.spawnEvery / this.demandMult() / (0.6 + 0.012 * seats) * (0.8 + Math.random() * 0.4);
+      this.spawnTimer = G.spawnEvery / this.demandMult() / (0.5 + 0.018 * seats) * (0.8 + Math.random() * 0.4);
       const active = this.parties.filter((p) => p.state !== 'leaving').length;
-      if (this.queue.length < 3 && active < this.tables.length + 3 && this.tutorialDone()) this.spawnParty();
+      if (this.queue.length < 4 && active < this.tables.length + 3 && this.tutorialDone()) this.spawnParty();
     }
     for (const p of this.parties) {
       if (p.state === 'queued' && p.patience != null) {
@@ -696,6 +768,10 @@ export default class LoungeScene extends BranchScene {
         p.bubble.setBar(p.patience / p.patienceMax);
         if (p.patience <= 0) { this.walkout(p); this.leaveParty(p, true); }
       } else if (p.state === 'eating') {
+        if (p.greet > 0) {
+          p.greet -= dt;
+          if (p.greet <= 0) { p.greet = 0; p.bubble.show(false); p.members.forEach((m, i) => { m.person.action = i % 3 === 2 ? 'talk' : 'eat'; }); }
+        }
         p.eat -= dt;
         if (p.eat <= 0) this.finishMeal(p);
       }
@@ -724,6 +800,9 @@ export default class LoungeScene extends BranchScene {
         if (!this.seatNext('player') && this.noTableCool <= 0) { this.noTableCool = 2.5; this.floatAt(p.x, p.y, 120, 'No clean table free', '#ffd6d6', 18); Sound.play('deny'); }
       }
     }
+    this.interactSink(dt);
+    this.checkGreet();
+    this.returnSurplus(dt);
     if (this.dropCool > 0) return;
     for (const t of this.tables) {
       if (!t.zone.contains(p.x, p.y)) continue;
@@ -747,18 +826,123 @@ export default class LoungeScene extends BranchScene {
         return;
       }
     }
-    const atReturn = this.returnZone.contains(p.x, p.y);
-    this.returnZone.setActive(atReturn);
-    if (atReturn && p.countOf('dirty') > 0) {
-      this.dropCool = PLAYER.dropEvery;
-      this.returnPlate(p.removeCarry('dirty'));
-      Haptic.tap('light');
-      if (b.tut === 4 && p.countOf('dirty') === 0) {
-        b.tut = 5; this.ensureGoals();
-        this.game.events.emit('toast', 'GRA Lounge is open for business!');
-        this.confetti(p.x, p.y);
+  }
+
+  /** dishes of a kind that tables (or the party booking) still need, minus what staff already carry */
+  wantedCount(type) {
+    let n = 0;
+    for (const q of this.parties) if (q.state === 'ordered' || q.state === 'reading' || q.state === 'toTable') n += Math.max(0, this.partyNeeds(q, type));
+    if (this.vehicle && this.vehicle.waiting) n += Math.max(0, this.vehicle.needs(type));
+    for (const h of this.helpers) if (h.w && h.w.countOf) n -= h.w.countOf(type);
+    return n;
+  }
+  /** smart pick-up: only take what someone is waiting for, so your tray never fills with food nobody ordered */
+  playerPick(pr) {
+    if (this.wantedCount(pr.type) - this.player.countOf(pr.type) <= 0) {
+      this.noNeedCool = (this.noNeedCool || 0);
+      if (this.noNeedCool <= 0) { this.noNeedCool = 3; this.floatAt(this.player.x, this.player.y, 130, 'No table needs this yet', '#ffffff', 17); }
+      return;
+    }
+    super.playerPick(pr);
+  }
+  /** carrying food nobody needs any more? Standing at its station puts it back on the pass */
+  returnSurplus(dt) {
+    this.noNeedCool = (this.noNeedCool || 0) - dt;
+    if (this.dropCool > 0) return;
+    const p = this.player;
+    for (const pr of Object.values(this.producers)) {
+      if (!pr.zone.contains(p.x, p.y)) continue;
+      if (p.countOf(pr.type) > Math.max(0, this.wantedCount(pr.type))) {
+        this.dropCool = PLAYER.dropEvery;
+        const from = p.removeCarry(pr.type);
+        if (pr.count < pr.cap) {
+          const it = pr.pile.add(1, false)[0];
+          if (it) { it.big = 1.5; it.setVisible(false); this.fly(ITEMS[pr.type].tex, from, { x: it.x, y: it.y, z: it.pos.y / U }, { duration: 180, arc: 30, onDone: () => it.active && it.setVisible(true) }); }
+        } else this.fly(ITEMS[pr.type].tex, from, { x: pr.cfg.zone ? 1560 : pr.cfg.x, y: pr.cfg.zone ? 520 : 430, z: 100 }, { duration: 200, arc: 30 });
+        return;
       }
     }
+  }
+
+  /** the sink: drop dirty plates, then wash them while you stand there */
+  interactSink(dt) {
+    const p = this.player; const b = this.b;
+    const atSink = this.sinkZone.contains(p.x, p.y);
+    this.sinkZone.setActive(atSink);
+    p.busy = null;
+    if (!atSink) { this.washT = 0; return; }
+    if (p.countOf('dirty') > 0) {
+      if (this.dropCool > 0) return;
+      this.dropCool = PLAYER.dropEvery;
+      this.toSink(p.removeCarry('dirty'));
+      Haptic.tap('light');
+      return;
+    }
+    if (this.sinkPile.count > 0) {
+      p.busy = 'wash';
+      if (Math.hypot(p.vx || 0, p.vy || 0) < 5) p.person.faceTo(Math.PI, false);
+      this.washT += dt;
+      if (this.washT >= LOUNGE.plates.wash / this.washMult()) { this.washT = 0; this.washOne(p); }
+    } else if (b.tut === 4 && p.countOf('dirty') === 0) this.finishTutorial();
+  }
+
+  finishTutorial() {
+    const p = this.player;
+    this.b.tut = 5; this.ensureGoals();
+    this.game.events.emit('toast', 'GRA Lounge is open for business!');
+    this.confetti(p.x, p.y);
+  }
+
+  washMult() { return (this.isUnlocked('machine') ? 2 : 1); }
+  platesCap() { return LOUNGE.plates.base + LOUNGE.plates.perUpgrade * (this.b.up.plates || 0); }
+
+  /** a dirty plate lands by the sink */
+  toSink(from) {
+    const it = this.sinkPile.add(1, false)[0];
+    if (it) it.setVisible(false);
+    const S = LOUNGE.sink;
+    this.fly('item_dirty', from, it ? { x: it.x, y: it.y, z: it.pos.y / U } : { x: S.x - 50, y: S.y, z: 95 }, { duration: 200, arc: 30, onDone: () => { if (it && it.active) it.setVisible(true); } });
+    Sound.play('drop', { n: 1 });
+  }
+
+  /** wash one plate (by you or by Kelechi) and put it on the rack */
+  washOne(who) {
+    if (!this.sinkPile.take()) return;
+    const S = LOUNGE.sink;
+    this.ctx.fx.burst('splash', S.x + 12 + Math.random() * 30, S.y + 4, 92, 7);
+    this.ctx.fx.burst('bubble', S.x + 20, S.y + 4, 92, 3);
+    Sound.play('wash');
+    this.b.stats.washed = (this.b.stats.washed || 0) + 1;
+    if (this.rackPile.count < this.platesCap()) {
+      const it = this.rackPile.add(1, false)[0];
+      if (it) { it.setVisible(false); this.fly('clean', { x: S.x + 30, y: S.y + 10, z: 100 }, { x: it.x, y: it.y, z: it.pos.y / U }, { duration: 260, arc: 40, onDone: () => { if (it.active) { it.setVisible(true); it.s = 1.25; this.ctx.tween(it, 's', 1, 0.15); } } }); }
+    }
+    if (who === this.player) {
+      Haptic.tap('light');
+      if (this.sinkPile.count === 0) {
+        this.floatAt(S.x, S.y + 60, 60, 'Sparkling!', '#bdf7ff', 20);
+        if (this.b.tut === 4 && who.countOf('dirty') === 0) this.finishTutorial();
+      }
+    }
+  }
+
+  /** a station needs one clean plate per dish (drinks come in glasses from the bar) */
+  takePlate() {
+    if (this.rackPile.count <= 0) return false;
+    this.rackPile.take();
+    return true;
+  }
+
+  /** if every plate somehow went missing, the supplier drops off a fresh crate */
+  checkPlates(dt) {
+    this.refillCool -= dt; if (this.refillCool > 0) return;
+    this.refillCool = 4;
+    if (this.rackPile.count > 0 || this.sinkPile.count > 0) return;
+    if (this.tables.some((t) => t.plates.count > 0 || t.dishes.length > 0)) return;
+    const carrying = [this.player, ...this.helpers.map((h) => h.w).filter(Boolean)].some((w) => w.countOf && w.countOf('dirty') > 0);
+    if (carrying) return;
+    this.rackPile.add(8, true);
+    this.game.events.emit('toast', 'A crate of fresh plates was delivered');
   }
 
   takeDirty(t, who) {
@@ -808,7 +992,10 @@ export default class LoungeScene extends BranchScene {
   // per frame
   updateBranch(dt) {
     if (this.navDirty) { this.ctx.nav.rebuild(this.colliders); this.navDirty = false; }
-    this.hostZone.update(dt); this.returnZone.update(dt);
+    this.hostZone.update(dt); this.sinkZone.update(dt);
+    this.updateTableSteam(dt);
+    this.updateKitchenDoor();
+    this.checkPlates(dt);
     this.updateParties(dt);
     for (const t of this.tables) t.zone.update(dt);
     this.updateScreens(dt);
@@ -822,7 +1009,9 @@ export default class LoungeScene extends BranchScene {
     const pv = this.playerV();
     this.world.setInside(this.player.y < 1600);
     this.world.update(dt, pv);
-    if (this.intro) this.updateIntro(dt); else this.ctx.view.follow(pv, dt);
+    // in the kitchen the camera keeps the back wall near the top of the screen instead of showing the garden
+    const fv = pv.clone(); if (fv.z < 5.6) fv.z = 5.6 - (5.6 - fv.z) * 0.15;
+    if (this.intro) this.updateIntro(dt); else this.ctx.view.follow(fv, dt);
     for (const pr of Object.values(this.producers)) pr.animate(dt);
     this.ctx.update(dt);
     if (!window.__skip3d) this.ctx.view.render(dt); // tests fast-forward without drawing
@@ -854,26 +1043,80 @@ export default class LoungeScene extends BranchScene {
       if (t) return { target: { ...t.service, r: 70 }, text: 'Collect the bill and clear the plates' };
       return { text: 'Let them enjoy their meal…' };
     }
-    if (b.tut === 4) return { target: zc(this.returnZone), text: 'Take the plates to the dish return' };
+    if (b.tut === 4) return { target: zc(this.sinkZone), text: p.countOf('dirty') > 0 ? 'Walk into the kitchen (by the bar) and take the plates to the sink' : 'Stand at the sink to wash the plates. The chefs need clean plates!' };
     return this.freeGoal();
   }
 
+  tableName(t) {
+    if (t.def.kind === 'booth') return 'Booth ' + t.id.slice(1);
+    if (t.def.kind === 'terrace') return 'the terrace table';
+    return 'Table ' + t.id.slice(1);
+  }
+  stationName(pr) { return { grill: 'Grill', pasta: 'Pasta Station', salad: 'Salad Station', pizza: 'Pizza Oven', dessert: 'Pastry Station', bar: 'Bar' }[pr.cfg.kind] || 'kitchen pass'; }
+
+  /** things that matter more than spending money: they come before the shared suggestions */
+  urgentGoal() {
+    const p = this.player;
+    const sinkT = { x: this.sinkZone.cx, y: this.sinkZone.cy, r: 50 };
+    if (p.countOf('dirty') > 0 && p.carryCount >= this.carryCap()) return { target: sinkT, text: 'Your tray is full of plates. Take them to the sink in the kitchen' };
+    const ordered = this.parties.filter((q) => q.state === 'ordered' && q.table).sort((a, b) => a.patience - b.patience);
+    for (const q of ordered) {
+      const k = this.partyTypes(q).find((x) => this.partyNeeds(q, x) > 0 && p.countOf(x) > 0);
+      if (k) return { target: { ...q.table.service, r: 70 }, text: `Serve ${this.tableName(q.table)}` };
+    }
+    const stalled = Object.values(this.producers).some((pr) => pr.noPlates);
+    if (stalled && p.countOf('dirty') > 0) return { target: sinkT, text: 'The chefs are out of clean plates! Take your plates to the sink' };
+    if (stalled && this.sinkPile.count > 0 && !this.isUnlocked('washer')) return { target: sinkT, text: 'The chefs are out of clean plates! Wash plates at the sink' };
+    const g = this.parties.find((q) => q.greet > 0 && q.table);
+    if (g) return { target: { ...g.table.service, r: 80 }, text: `${this.tableName(g.table)} wants to meet the owner. Go and greet them!` };
+    return null;
+  }
+  freeGoal() {
+    if (this.tutorialDone()) { const u = this.urgentGoal(); if (u) return u; }
+    return super.freeGoal();
+  }
+
+  /** the next useful thing to do, with an arrow to it */
   branchFreeGoal() {
     const p = this.player;
-    if (p.countOf('dirty') > 0 && p.carryCount >= this.carryCap()) return { target: { x: this.returnZone.cx, y: this.returnZone.cy }, text: 'Your tray is full of plates. Take them to the dish return' };
+    const sinkT = { x: this.sinkZone.cx, y: this.sinkZone.cy, r: 50 };
     const waiting = this.queue.find((q) => q.state === 'queued');
     if (waiting && !this.isUnlocked('host')) {
-      if (this.freeTableFor(waiting.size)) return { target: { x: LOUNGE.host.zone.x, y: LOUNGE.host.zone.y }, text: `A party of ${waiting.size} is waiting at the door. Seat them!` };
+      if (this.freeTableFor(waiting.size)) return { target: { x: LOUNGE.host.zone.x, y: LOUNGE.host.zone.y, r: 50 }, text: `A party of ${waiting.size} is waiting at the door. Seat them!` };
       const dirty = this.tables.find((t) => !t.party && t.plates.count > 0);
-      if (dirty && !this.isUnlocked('busser')) return { target: { ...dirty.service, r: 70 }, text: 'Guests are waiting. Clear a table!' };
+      if (dirty && !this.isUnlocked('busser') && p.carryCount < this.carryCap()) return { target: { ...dirty.service, r: 70 }, text: `Guests are waiting. Clear ${this.tableName(dirty)}!` };
     }
-    const hungry = this.parties.filter((q) => q.state === 'ordered').sort((a, b) => a.patience - b.patience)[0];
-    if (hungry && hungry.patience < hungry.patienceMax * 0.4) {
-      const k = this.partyTypes(hungry).find((x) => this.partyNeeds(hungry, x) > 0);
-      const what = this.E.itemName(k, 2);
-      if (p.countOf(k) > 0) return { target: { ...hungry.table.service, r: 70 }, text: `Hurry! A table is waiting for ${what}` };
-      return { text: `Hurry! A table is waiting for ${what}`, arrow: false };
+    // fetch food for a table nobody is serving yet
+    if (p.carryCount < this.carryCap()) {
+      const open = this.parties.filter((q) => q.state === 'ordered' && q.table && !q.claimedBy).sort((a, b) => a.patience - b.patience);
+      for (const q of open) {
+        const needs = this.partyTypes(q).filter((k) => this.partyNeeds(q, k) - p.countOf(k) > 0 && this.producersOf(k).length);
+        if (!needs.length) continue;
+        const src = this.nearestSource(needs, p);
+        const n = this.partyNeeds(q, src.type) - p.countOf(src.type);
+        const hurry = q.patience < q.patienceMax * 0.4 ? 'Hurry! ' : '';
+        const what = `${n} ${this.E.itemName(src.type, n)}`;
+        if (src.count > 0) return { target: { x: src.zone.cx, y: src.zone.cy, r: 45 }, text: `${hurry}${this.tableName(q.table)} ordered ${what}. Pick up at the ${this.stationName(src)}` };
+        if (src.noPlates) return { target: sinkT, text: `The ${this.stationName(src)} needs clean plates. Wash some at the sink` };
+        return { target: { x: src.zone.cx, y: src.zone.cy, r: 45 }, text: `${hurry}${what} for ${this.tableName(q.table)} coming up at the ${this.stationName(src)}…` };
+      }
     }
+    if (!this.isUnlocked('busser')) {
+      const room = p.carryCount < this.carryCap();
+      const dirty = this.tables.filter((t) => !t.party && ((room && t.plates.count > 0) || t.cash.value > 0)).sort((a, b) => Math.hypot(a.x - p.x, a.y - p.y) - Math.hypot(b.x - p.x, b.y - p.y))[0];
+      if (dirty) return { target: { ...dirty.service, r: 70 }, text: dirty.plates.count > 0 && room ? `Clear ${this.tableName(dirty)} and collect the bill` : `Collect the bill at ${this.tableName(dirty)}` };
+    }
+    if (p.countOf('dirty') > 0) return { target: sinkT, text: 'Take the dirty plates to the sink in the kitchen' };
+    const extra = p.carryItems.find((c) => c.type !== 'dirty' && p.countOf(c.type) > this.wantedCount(c.type));
+    if (extra) { const pr = this.producersOf(extra.type)[0]; if (pr) return { target: { x: pr.zone.cx, y: pr.zone.cy, r: 45 }, text: `Nobody needs that ${this.E.itemName(extra.type, 1)} now. Put it back at the ${this.stationName(pr)}` }; }
+    if (this.boothZone && this.gs.cash > 0) {
+      const up = this.upgradeList().filter((u) => (this.b.up[u.id] || 0) < u.max).sort((a, b) => this.upgradeCost(a) - this.upgradeCost(b))[0];
+      const next = this.pads[0];
+      if (up && this.gs.cash >= this.upgradeCost(up) && (!next || this.gs.cash < next.remaining * 0.5)) return { target: { x: this.boothZone.cx, y: this.boothZone.cy, r: 45 }, text: `You can afford the ${up.name} upgrade. Visit the Upgrade Desk` };
+    }
+    if (this.sinkPile.count > 0 && !this.isUnlocked('washer')) return { target: sinkT, text: `${this.sinkPile.count} dirty plate${this.sinkPile.count > 1 ? 's' : ''} at the sink. Wash them so the chefs never run out` };
+    const pile = this.cashPiles.filter((c) => c.value > 0).sort((a, b) => b.value - a.value)[0];
+    if (pile) return { target: { x: pile.x, y: pile.y, r: 60 }, text: pile === this.tillCash && this.isUnlocked('busser') ? `Emeka banked ${money(pile.value)} at the till. Collect it` : `Collect ${money(pile.value)}` };
     return null;
   }
 
@@ -898,15 +1141,17 @@ class Producer3D {
     const E = scene.E; const ctx = scene.ctx;
     this.scene = scene; this.id = id; this.cfg = cfg; this.type = cfg.type;
     this.interval = cfg.interval; this.cap = cfg.cap; this.timer = 0;
-    const bar = cfg.kind === 'bar';
-    this.group = bar ? scene.world.buildBar() : scene.world.buildStation(id, cfg).group;
+    const bar = cfg.kind === 'bar'; this.bar = bar;
+    if (bar) this.group = scene.world.buildBar();
+    else { const st = scene.world.buildStation(id, cfg); this.group = st.group; this.chef = st.chef; this.chefT = Math.random() * 5; }
     const zx = cfg.zone ? cfg.zone.x : cfg.x; const zy = cfg.zone ? cfg.zone.y : LOUNGE.stationZoneY;
     this.zone = new E.Zone3D(ctx, { x: zx, y: zy, r: 58 }, { color: 0xffd23f });
     const layout = bar
       ? (i) => E.toV(1550 - (i % 2) * 12, cfg.y - 40 + Math.floor(i / 2) * 16 - 16, 110)
-      : (i) => E.toV(cfg.x + ((i % 3) - 1) * 17, LOUNGE.passY + Math.floor(i / 3) * 15 - 8, 99);
+      : (i) => E.toV(cfg.x + ((i % 3) - 1) * 24, LOUNGE.passY + Math.floor(i / 3) * 18 - 9, 99);
     this.pile = new E.Pile3D(ctx, this.type, layout, { maxVisual: this.cap });
-    this.pile.add(startCount != null ? Math.min(startCount, this.cap) : cfg.start, false);
+    this.addFx();
+    this.pile.add(startCount != null ? Math.min(startCount, this.cap) : cfg.start, false).forEach((it) => { it.big = 1.5; });
     if (bar) {
       this.bartender = new E.Walker(ctx, E.staffLook('bartender', 17), 1680, 520, 100, null);
       this.bartender.person.action = 'mix'; this.bartender.person.faceTo(-Math.PI / 2, true);
@@ -916,11 +1161,46 @@ class Producer3D {
   }
   get count() { return this.pile.count; }
   update(dt, speedMult) {
-    if (this.pile.count >= this.cap) { this.timer = 0; return; }
+    if (this.pile.count >= this.cap) { this.timer = 0; this.noPlates = false; return; }
     this.timer += dt * speedMult;
-    if (this.timer >= this.interval) { this.timer -= this.interval; this.pile.add(1, true); }
+    if (this.timer >= this.interval) {
+      // every plated dish needs a clean plate from the rack
+      if (!this.bar && !this.scene.takePlate()) { this.timer = this.interval; this.noPlates = true; return; }
+      this.noPlates = false;
+      this.timer -= this.interval;
+      this.pile.add(1, true).forEach((it) => { it.big = 1.5; });
+      if (this.chef) { this.chef.action = 'plate'; this.chefT = 0.9; }
+      if (!this.bar) this.scene.ctx.fx.burst('steam', this.cfg.x, LOUNGE.passY + 4, 108, 3, 0.8);
+    }
   }
-  animate() {}
+  /** chefs cook, plate up, and stop to wait when there are no clean plates */
+  animate(dt) {
+    const c = this.chef; if (!c) return;
+    this.chefT -= dt;
+    if (this.chefT <= 0) { c.action = this.noPlates ? null : 'cook'; this.chefT = 9; }
+    c.faceTo(this.noPlates ? 1.3 + Math.sin(this.scene.ctx.time * 0.6) * 0.4 : 0, false);
+    c.update(dt, 0, 0);
+  }
+  addFx() {
+    const fx = this.scene.ctx.fx; const x = this.cfg.x; const k = this.cfg.kind;
+    const on = () => !this.noPlates;
+    if (k === 'grill') {
+      fx.emitter('fire', x, 430, 104, 26, on, { spread: 1.0 });
+      fx.emitter('ember', x, 430, 106, 3, on, { spread: 1.0 });
+      fx.emitter('smoke', x, 430, 115, 3, on, { spread: 0.8 });
+    } else if (k === 'pasta') {
+      for (const [dx, r] of [[-48, 4], [4, 5], [50, 4]]) fx.emitter('steam', x + dx, 430, 126, r, on, { spread: 0.15 });
+    } else if (k === 'pizza') {
+      fx.emitter('fire', x, 486, 120, 10, on, { spread: 0.3, mul: 0.8 });
+      fx.emitter('smoke', x + 38, 408, 220, 2, on, { spread: 0.1 });
+    } else if (k === 'salad') {
+      // nothing hot here
+    } else if (k === 'dessert') {
+      fx.emitter('sparkle', x, 430, 150, 0.6, on, { spread: 1.3, mul: 0.5 });
+    } else if (k === 'bar') {
+      fx.emitter('sparkle', 1560, 520, 130, 0.5, () => true, { spread: 1.0, mul: 0.5 });
+    }
+  }
   popIn() {}
 }
 
@@ -1105,10 +1385,10 @@ class Busser {
       return;
     }
     if (this.state === 'return') {
-      const z = sc.returnZone;
-      if (!w.at({ x: z.cx, y: z.cy }, 14)) return;
+      const z = sc.sinkZone;
+      if (!w.at({ x: z.cx - 30, y: z.cy - 10 }, 14)) return;
       if (w.cool > 0) return;
-      if (w.countOf('dirty') > 0) { w.cool = 0.12; sc.returnPlate(w.removeCarry('dirty')); return; }
+      if (w.countOf('dirty') > 0) { w.cool = 0.12; sc.toSink(w.removeCarry('dirty')); return; }
       this.state = this.bank ? 'bank' : 'idle';
       return;
     }
@@ -1118,6 +1398,28 @@ class Busser {
       sc.tillCash.deposit(this.bank, { x: w.x, y: w.y, z: 110 });
       this.bank = 0; this.state = 'idle';
     }
+  }
+}
+
+/** Dishwasher: stands at the sink and washes whatever comes back */
+class Washer {
+  constructor(scene) {
+    this.scene = scene; this.home = { x: LOUNGE.sink.x - 35, y: LOUNGE.sink.y + 60 };
+    this.w = makeWorker(scene, 'washer', 71, this.home.x, this.home.y + 200, 'Kelechi', 'm');
+    this.person = this.w.person; this.t = 0; this.w.fixedAction = true; this.washing = false;
+  }
+  update(dt) {
+    const w = this.w; const sc = this.scene;
+    w.update(dt);
+    this.washing = false;
+    if (w.moving) { w.person.action = null; return; }
+    if (!w.near(this.home, 14)) { w.goTo(this.home); return; }
+    w.person.faceTo(Math.PI, false);
+    if (sc.sinkPile.count > 0) {
+      this.washing = true; w.person.action = 'wash';
+      this.t += dt;
+      if (this.t >= LOUNGE.plates.staffWash / (sc.staffMult() * sc.washMult())) { this.t = 0; sc.washOne(w); }
+    } else { w.person.action = null; this.t = 0; }
   }
 }
 

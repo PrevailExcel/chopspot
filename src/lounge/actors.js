@@ -74,7 +74,8 @@ export class Player3D {
   setPosition(x, y) { this.x = x; this.y = y; }
   animate(dt, vx, vy) {
     this.t += dt;
-    this.person.action = this.stack.count ? 'carry' : null;
+    this.vx = vx; this.vy = vy;
+    this.person.action = this.stack.count ? 'carry' : (this.busy || null);
     this.person.update(dt, vx * U, vy * U);
     this.sync();
   }

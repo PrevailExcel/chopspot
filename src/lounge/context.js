@@ -7,6 +7,7 @@ import { World } from './world.js';
 import { Kit, textures, mats } from './kit.js';
 import { Batches, textSprite, Confetti3D, Guide3D, toV, updateScreenSprites } from './objects3d.js';
 import { NavGrid } from './nav.js';
+import { Fx } from './fx.js';
 import { ITEMS } from '../config.js';
 
 const U = 0.01;
@@ -15,6 +16,7 @@ const ease = { out: (t) => 1 - Math.pow(1 - t, 3), back: (t) => { const c = 1.7;
 /** turn a texture key from the 2D game into a dish type */
 function typeFromTex(tex) {
   if (tex === 'item_cash') return 'cash';
+  if (tex === 'clean') return 'clean';
   if (tex === 'item_dirty' || tex === 'icon_dirty') return 'dirty';
   for (const [k, v] of Object.entries(ITEMS)) if (v.tex === tex || v.icon === tex) return k;
   return 'dirty';
@@ -56,6 +58,7 @@ export function createContext(scene) {
   };
   ctx.confettiFx = new Confetti3D(ctx);
   ctx.guide = new Guide3D(ctx);
+  ctx.fx = new Fx(ctx);
 
   ctx.tween = (obj, key, to, dur, fn = ease.out, onDone = null) => { ctx.tweens.push({ obj, key, from: obj[key], to, t: 0, dur, fn, onDone }); };
   ctx.after = (sec, fn) => { ctx.timers.push({ t: sec, fn }); };
@@ -121,6 +124,7 @@ export function createContext(scene) {
     }
     ctx.floats = ctx.floats.filter((f) => f.t <= 1.1);
     ctx.confettiFx.update(dt);
+    ctx.fx.update(dt);
     ctx.batches.update();
     updateScreenSprites(view.camera);
   };

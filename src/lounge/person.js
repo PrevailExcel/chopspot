@@ -102,6 +102,7 @@ export function staffLook(kind, seed, gender) {
       : { ...keep, outfit: 'suit', top: '#141418', bottom: '#141418', shirt: '#f6f6f2', accent: '#c9a24a', shoes: '#111111', badge: true };
     case 'bartender': return { ...keep, outfit: 'apron', top: '#1a1a1e', bottom: '#1a1a1e', apron: '#5a3a22', shoes: '#111111', sleeves: 'rolled' };
     case 'busser': return { ...keep, outfit: 'apron', top: '#2f3a4a', bottom: '#1a1a1e', apron: '#16171b', shoes: '#111111', sleeves: 'short' };
+    case 'washer': return { ...keep, outfit: 'apron', top: '#2f6f8f', bottom: '#1a1a1e', apron: '#e8c35a', shoes: '#111111', sleeves: 'rolled', hat: 'cap', capCol: '#2f6f8f' };
     case 'security': return { ...keep, outfit: 'shirt', top: '#1f2a44', bottom: '#1f2a44', sleeves: 'short', shoes: '#0d0d0d', hat: 'cap', capCol: '#1f2a44', hair: 'low', gender: 'm' };
     case 'manager': return g === 'f'
       ? { ...keep, outfit: 'blazer', top: '#2c3e66', shirt: '#f6f6f2', bottom: '#1d2230', shoes: '#151515', badge: true }
@@ -469,6 +470,16 @@ export class Person {
       set('uArmL', -0.55, 0, 0.15); set('fArmL', -0.9 + g * 0.15);
       set('uArmR', -0.6 + g * 0.1, 0, -0.2); set('fArmR', -1.0, g * 0.4, 0);
       set('chest', 0.12, Math.sin(t * 1.3) * 0.15, 0);
+    } else if (a === 'wash') {
+      const g = Math.sin(t * 9), g2 = Math.cos(t * 9);
+      set('uArmL', -0.7 + g * 0.08, 0, 0.12); set('fArmL', -0.55 + g2 * 0.12);
+      set('uArmR', -0.7 - g * 0.1, 0, -0.12 + g2 * 0.06); set('fArmR', -0.6 - g2 * 0.15, g * 0.3, 0);
+      set('spine', 0.22, 0, 0); set('chest', 0.08, g * 0.06, 0); set('head', 0.25, 0, 0);
+    } else if (a === 'plate') {
+      const g = Math.sin(t * 4);
+      set('uArmL', -0.8, 0, 0.18); set('fArmL', -0.7 + g * 0.1);
+      set('uArmR', -0.9, 0, -0.18); set('fArmR', -0.6 - g * 0.1);
+      set('spine', 0.18, 0, 0); set('head', 0.2, 0, 0);
     } else if (a === 'mix') {
       const g = Math.sin(t * 16) * 0.12;
       set('uArmL', -1.1 + g, 0, 0.25); set('fArmL', -1.6);

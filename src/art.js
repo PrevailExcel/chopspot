@@ -1311,6 +1311,34 @@ function buildLoungeIcons(scene) {
     rr(c, 8, 46, 48, 8, 3); c.fillStyle = '#d9a21a'; c.fill(); c.stroke();
   });
   T('icon_dish', (c) => { plateBase(c, 32, 40, 54); plateBase(c, 32, 32, 54); });
+  person('icon_washer', '#2f6f8f', null, (c) => {
+    c.fillStyle = '#f2c14e'; rr(c, 40, 40, 12, 18, 4); c.fill();
+    c.fillStyle = 'rgba(160,220,255,0.95)'; for (const [x, y, r] of [[12, 44, 4], [8, 52, 3], [16, 54, 2.5]]) { c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); }
+  });
+  T('icon_machine', (c) => {
+    rr(c, 10, 10, 44, 46, 6); c.fillStyle = lin(c, 0, 10, 0, 56, [[0, '#e9edf0'], [1, '#9aa3ab']]); c.fill(); c.strokeStyle = '#5e666e'; c.lineWidth = 2; c.stroke();
+    rr(c, 16, 22, 32, 26, 4); c.fillStyle = '#2a3a46'; c.fill();
+    c.fillStyle = 'rgba(140,210,255,0.8)'; for (let i = 0; i < 5; i++) { c.beginPath(); c.arc(22 + i * 5, 40 - (i % 2) * 6, 3, 0, 7); c.fill(); }
+    c.fillStyle = '#2bb34a'; c.beginPath(); c.arc(44, 15, 2.6, 0, 7); c.fill();
+    c.fillStyle = 'rgba(255,255,255,0.75)'; for (const [x, y] of [[20, 6], [30, 3], [40, 6]]) { c.beginPath(); c.arc(x, y, 3.5, 0, 7); c.fill(); }
+  });
+  T('icon_wash', (c) => {
+    plateBase(c, 30, 40, 50);
+    c.fillStyle = 'rgba(120,200,255,0.95)';
+    for (const [x, y, r] of [[46, 18, 7], [36, 12, 5], [52, 30, 4.5], [22, 16, 4]]) { c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); c.fillStyle = 'rgba(255,255,255,0.8)'; c.beginPath(); c.arc(x - r * 0.35, y - r * 0.35, r * 0.3, 0, 7); c.fill(); c.fillStyle = 'rgba(120,200,255,0.95)'; }
+  });
+  T('icon_greet', (c) => {
+    c.beginPath(); c.arc(32, 32, 27, 0, 7); c.fillStyle = lin(c, 0, 5, 0, 59, [[0, '#ffe58a'], [1, '#e0a21a']]); c.fill(); c.strokeStyle = '#8a6200'; c.lineWidth = 2.5; c.stroke();
+    // a waving hand
+    c.save(); c.translate(32, 35); c.rotate(-0.25);
+    c.fillStyle = '#8d5a36'; c.strokeStyle = '#4a2a10'; c.lineWidth = 1.6;
+    for (let i = 0; i < 4; i++) { rr(c, -10 + i * 5.4, -19 + Math.abs(i - 1.5) * 2.2, 4.8, 16, 2.4); c.fill(); c.stroke(); }
+    rr(c, -11, -6, 22, 17, 7); c.fill(); c.stroke();
+    c.save(); c.translate(-10, 2); c.rotate(-0.9); rr(c, -2.4, -11, 4.8, 12, 2.4); c.fill(); c.stroke(); c.restore();
+    c.restore();
+    c.strokeStyle = '#ffffff'; c.lineWidth = 2.2; c.lineCap = 'round';
+    for (const [a, r] of [[-0.5, 22], [-0.1, 24]]) { c.beginPath(); c.arc(32, 35, r, a - 0.25 - Math.PI / 2 + 1.9, a + 0.25 - Math.PI / 2 + 1.9); c.stroke(); }
+  });
 }
 
 // shared painters for other modules (billboard ads paint their own faces)

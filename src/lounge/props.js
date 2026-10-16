@@ -212,57 +212,153 @@ export function barStool(k, x, z) {
 }
 
 export function pass(k, len) {
-  k.box(len, 0.95, 0.5, [0, 0.475, 0], '#202326', 'metal');
+  k.box(len, 0.95, 0.5, [0, 0.475, 0], '#1b1d20', 'satin');
   for (let i = 0; i < len / 0.09; i++) k.cyl(0.03, 0.86, [-len / 2 + 0.05 + i * 0.09, 0.47, 0.25], PAL.walnut, 'satin', 6);
   k.box(len + 0.04, 0.05, 0.62, [0, 0.975, 0], PAL.marble, 'gloss');
   k.box(len + 0.06, 0.02, 0.02, [0, 0.95, 0.31], PAL.brass, 'metal');
-  k.box(len, 0.06, 0.4, [0, 1.75, -0.05], PAL.steel, 'metal');
+  k.box(len + 0.06, 0.012, 0.04, [0, 0.05, 0.27], '#ffb35a', 'glow');
+  // heat-lamp gantry with warm bulbs over the plated food
+  k.box(len, 0.05, 0.36, [0, 1.78, -0.05], '#26282c', 'metal');
+  k.box(len, 0.012, 0.3, [0, 1.75, -0.05], '#ffb04a', 'glow');
+  for (const sx of [-1, 1]) k.cyl(0.02, 0.8, [sx * (len / 2 - 0.05), 1.38, -0.05], PAL.brass, 'metal', 8);
   for (let i = 0; i < Math.floor(len / 0.55); i++) {
     const x = -len / 2 + 0.3 + i * 0.55;
     k.cyl(0.006, 0.5, [x, 2.0, 0], PAL.black, 'matte', 4);
-    k.lathe([[0.02, 0.1], [0.07, 0.02], [0.075, 0]], [x, 1.62, 0], PAL.black, 'metal', 12);
-    k.sphere(0.04, 0.03, 0.04, [x, 1.63, 0], '#ff8a3a', 'glow', 8);
+    k.lathe([[0.02, 0.1], [0.07, 0.02], [0.075, 0]], [x, 1.62, 0], PAL.brass, 'metal', 12);
+    k.sphere(0.045, 0.03, 0.045, [x, 1.63, 0], '#ff8a3a', 'glow', 8);
   }
 }
 
+/** back counter along the kitchen wall */
+export function backLine(k, len) {
+  k.box(len, 0.88, 0.6, [0, 0.44, 0], '#24262a', 'satin');
+  k.box(len, 0.05, 0.64, [0, 0.905, 0], PAL.marble, 'gloss');
+  for (let i = 0; i < Math.floor(len / 0.6); i++) k.box(0.012, 0.6, 0.012, [-len / 2 + 0.3 + i * 0.6, 0.48, 0.305], PAL.brass, 'metal');
+}
+
+/** the scullery: drainboard, double sink with a tall tap, splashback */
+export function sinkUnit(k, w = 1.3) {
+  k.box(w, 0.86, 0.62, [0, 0.43, 0], '#d7dce0', 'metal');
+  k.box(w + 0.02, 0.04, 0.64, [0, 0.88, 0], '#eef1f3', 'metal');
+  k.box(w, 0.4, 0.04, [0, 1.1, -0.3], '#eef1f3', 'metal');
+  // two basins with soapy water
+  for (const bx of [0.12, 0.47]) {
+    k.box(0.32, 0.02, 0.44, [bx, 0.9, 0.02], '#9aa4ab', 'metal');
+    k.box(0.3, 0.012, 0.42, [bx, 0.885, 0.02], '#9fd6f0', 'gloss');
+    for (let i = 0; i < 6; i++) k.sphere(0.03 + (i % 3) * 0.01, 0.02, 0.03 + (i % 2) * 0.01, [bx - 0.1 + (i % 3) * 0.1, 0.9, -0.1 + Math.floor(i / 3) * 0.2], '#ffffff', 'satin', 8);
+  }
+  // drainboard ribs on the left
+  for (let i = 0; i < 6; i++) k.box(0.36, 0.008, 0.012, [-0.42, 0.905, -0.2 + i * 0.08], '#bfc6cc', 'metal');
+  // gooseneck tap and pre-rinse spray
+  k.cyl(0.02, 0.5, [0.3, 1.15, -0.24], '#e9edf0', 'metal', 10);
+  k.torus(0.12, 0.018, [0.3, 1.4, -0.12], '#e9edf0', 'metal', [0, Math.PI / 2, 0], 16);
+  k.cyl(0.018, 0.12, [0.3, 1.33, 0.0], '#e9edf0', 'metal', 10);
+  k.cyl(0.03, 0.04, [0.12, 0.96, -0.24], '#2a2c31', 'metal', 10);
+  k.cyl(0.035, 0.12, [-0.15, 0.96, -0.22], '#3ab0e8', 'gloss', 10); // soap
+}
+
+/** a hood-type commercial dishwasher (unlock "machine") */
+export function dishMachine(k) {
+  k.box(0.78, 0.86, 0.66, [0, 0.43, 0], '#c9cfd4', 'metal');
+  k.box(0.74, 0.62, 0.62, [0, 1.2, 0], '#e3e7ea', 'metal');
+  k.box(0.6, 0.36, 0.02, [0, 1.2, 0.315], '#2a3a46', 'gloss');
+  k.box(0.56, 0.32, 0.01, [0, 1.2, 0.322], '#5ab4e0', 'glow');
+  k.box(0.7, 0.04, 0.05, [0, 1.52, 0.33], '#2a2c31', 'metal');
+  k.box(0.2, 0.1, 0.02, [0.22, 1.62, 0.32], '#1b1d20', 'gloss');
+  k.box(0.05, 0.03, 0.01, [0.17, 1.62, 0.332], '#2bff6a', 'glow');
+  k.box(0.05, 0.03, 0.01, [0.26, 1.62, 0.332], '#ffb21a', 'glow');
+  k.box(0.78, 0.08, 0.66, [0, 1.55, 0], '#d0d5d9', 'metal');
+}
+
+/** a plain counter with a drying rack where the dishwasher will go */
+export function dryingCounter(k) {
+  k.box(0.78, 0.86, 0.62, [0, 0.43, 0], '#24262a', 'satin');
+  k.box(0.8, 0.04, 0.64, [0, 0.88, 0], '#eef1f3', 'metal');
+  for (let i = 0; i < 7; i++) k.box(0.012, 0.16, 0.4, [-0.3 + i * 0.1, 0.98, 0], '#c9cfd4', 'metal');
+}
+
+/** wire shelving trolley that holds the clean plates */
+export function plateRack(k) {
+  for (const [x, z] of [[-0.24, -0.48], [0.24, -0.48], [-0.24, 0.48], [0.24, 0.48]]) k.cyl(0.014, 1.3, [x, 0.65, z], '#c9cfd4', 'metal', 8);
+  for (const y of [0.32, 0.74, 1.16]) {
+    k.box(0.52, 0.015, 1.0, [0, y, 0], '#aeb6bd', 'metal');
+    for (let i = 0; i < 9; i++) k.box(0.5, 0.008, 0.008, [0, y + 0.012, -0.45 + i * 0.112], '#d8dde1', 'metal');
+  }
+  for (const [x, z] of [[-0.24, -0.48], [0.24, -0.48], [-0.24, 0.48], [0.24, 0.48]]) k.cyl(0.035, 0.05, [x, 0.03, z], '#1b1d20', 'matte', 10);
+}
+
+/** one leaf of the swinging kitchen door; hinge at the local origin, leaf runs along +x */
+export function swingLeaf(k, w) {
+  k.rbox(w, 1.0, 0.05, [w / 2, 1.0, 0], PAL.walnut, 'satin', null, 0.03);
+  k.cyl(0.11, 0.012, [w * 0.6, 1.25, 0.03], '#cfe6f2', 'glass', 16, [Math.PI / 2, 0, 0]);
+  k.torus(0.11, 0.012, [w * 0.6, 1.25, 0.03], PAL.brass, 'metal', null, 18);
+  k.box(w * 0.8, 0.12, 0.06, [w / 2, 0.58, 0], PAL.brass, 'metal');
+}
+
 export function station(k, kind) {
-  // sits behind the pass (local -z = kitchen side)
-  k.box(1.9, 0.9, 0.8, [0, 0.45, 0], PAL.steel, 'metal');
-  k.box(1.92, 0.04, 0.82, [0, 0.92, 0], '#d8dde1', 'metal');
+  // sits behind the pass (local -z = kitchen side): dark enamel body, brushed steel top, brass trim
+  k.box(1.9, 0.86, 0.8, [0, 0.45, 0], PAL.charcoal, 'satin');
+  k.box(1.9, 0.08, 0.8, [0, 0.04, 0], '#141518', 'matte');
+  k.box(1.94, 0.05, 0.84, [0, 0.905, 0], '#e3e7ea', 'metal');
+  k.box(1.92, 0.02, 0.02, [0, 0.86, 0.41], PAL.brass, 'metal');
+  for (const sx of [-1, 1]) k.box(0.02, 0.8, 0.02, [sx * 0.95, 0.46, 0.41], PAL.brass, 'metal');
+  for (let i = 0; i < 4; i++) {
+    const x = -0.6 + i * 0.4;
+    k.cyl(0.035, 0.03, [x, 0.72, 0.41], '#d8dde1', 'metal', 12, [Math.PI / 2, 0, 0]);
+    k.cyl(0.042, 0.006, [x, 0.72, 0.405], kind === 'grill' || kind === 'pizza' ? '#ff7a2a' : '#7fd3ff', 'glow', 14, [Math.PI / 2, 0, 0]);
+  }
+  k.box(1.5, 0.03, 0.02, [0, 0.3, 0.41], '#3a3c42', 'metal');
   if (kind === 'grill') {
-    k.box(1.2, 0.1, 0.6, [0, 0.98, 0], '#1a1a1a', 'metal');
-    for (let i = 0; i < 9; i++) k.box(0.02, 0.02, 0.56, [-0.52 + i * 0.13, 1.04, 0], '#3a3a3a', 'metal');
-    k.box(1.1, 0.02, 0.5, [0, 1.01, 0], '#ff6a1a', 'glow');
-    k.rbox(0.25, 0.06, 0.16, [-0.2, 1.08, 0.05], '#6b2e14', 'satin', null, 0.02);
-    k.rbox(0.25, 0.06, 0.16, [0.25, 1.08, -0.08], '#6b2e14', 'satin', null, 0.02);
+    k.box(1.3, 0.1, 0.62, [0, 0.98, 0], '#1a1a1a', 'metal');
+    k.box(1.2, 0.02, 0.52, [0, 1.0, 0], '#ff5a12', 'glow');
+    for (let i = 0; i < 6; i++) k.sphere(0.07, 0.03, 0.06, [-0.5 + i * 0.2, 1.015, (i % 2) * 0.12 - 0.06], '#ffb04a', 'glow', 6);
+    for (let i = 0; i < 11; i++) k.box(0.016, 0.02, 0.58, [-0.6 + i * 0.12, 1.045, 0], '#2e2e2e', 'metal');
+    k.rbox(0.24, 0.05, 0.15, [-0.25, 1.08, 0.06], '#6b2e14', 'satin', [0, 0.3, 0], 0.02);
+    k.rbox(0.22, 0.05, 0.14, [0.2, 1.08, -0.09], '#7a3416', 'satin', [0, -0.2, 0], 0.02);
+    k.rbox(0.2, 0.05, 0.13, [0.45, 1.08, 0.1], '#5e2810', 'satin', [0, 0.6, 0], 0.02);
+    k.box(0.04, 0.3, 0.04, [0.8, 1.05, -0.3], '#2a2a2a', 'metal');
   } else if (kind === 'pasta') {
-    for (const [px, r] of [[-0.45, 0.2], [0.05, 0.22], [0.5, 0.17]]) {
-      k.cyl(0.13, 0.03, [px, 0.95, 0], '#222', 'metal', 12);
-      k.lathe([[0, 0], [r, 0], [r, 0.3], [r + 0.01, 0.31]], [px, 0.97, 0], PAL.steel, 'metal', 16);
-      k.cyl(r - 0.01, 0.01, [px, 1.25, 0], px < 0 ? '#e9d7a0' : '#c84a2a', 'satin', 16);
+    k.box(1.4, 0.03, 0.62, [0, 0.94, 0], '#1d1e21', 'metal');
+    for (const [px, r, col] of [[-0.48, 0.19, '#efe0b0'], [0.04, 0.21, '#c84a2a'], [0.5, 0.17, '#e8c860']]) {
+      k.torus(0.1, 0.012, [px, 0.96, 0], '#3a7bd5', 'glow', [Math.PI / 2, 0, 0], 18);
+      k.lathe([[0, 0], [r, 0], [r, 0.28], [r + 0.012, 0.29], [r + 0.012, 0.3]], [px, 0.97, 0], '#dfe4e8', 'metal', 18);
+      k.cyl(r - 0.01, 0.012, [px, 1.235, 0], col, 'gloss', 18);
+      k.box(0.24, 0.012, 0.025, [px + r + 0.1, 1.24, 0], '#dfe4e8', 'metal');
     }
   } else if (kind === 'salad') {
-    k.box(1.6, 0.06, 0.55, [0, 0.96, 0], '#cfd8dc', 'metal');
-    const cols = ['#5cb85c', '#e84a3a', '#f2d16b', '#7bd36b', '#f4f1ea', '#3f7a3a'];
-    for (let i = 0; i < 6; i++) {
-      k.lathe([[0, 0], [0.11, 0.0], [0.13, 0.1]], [-0.65 + i * 0.26, 0.98, 0], '#ffffff', 'gloss', 12);
-      k.sphere(0.1, 0.04, 0.1, [-0.65 + i * 0.26, 1.07, 0], cols[i], 'satin', 10);
+    k.box(1.62, 0.07, 0.56, [0, 0.96, 0], '#dfe4e8', 'metal');
+    const cols = ['#5cb85c', '#e84a3a', '#f2d16b', '#8fe07a', '#f4f1ea', '#3f7a3a', '#a64ac9', '#ff9a3a'];
+    for (let i = 0; i < 8; i++) {
+      const x = -0.68 + (i % 4) * 0.45, z = i < 4 ? -0.12 : 0.13;
+      k.box(0.36, 0.06, 0.22, [x, 0.99, z], '#ffffff', 'gloss');
+      for (let j = 0; j < 5; j++) k.sphere(0.04, 0.025, 0.035, [x - 0.12 + j * 0.06, 1.03, z + ((j % 2) - 0.5) * 0.06], cols[i], 'satin', 6);
     }
+    k.cyl(0.15, 0.1, [0.95, 0.98, 0], '#ffffff', 'gloss', 18);
   } else if (kind === 'pizza') {
     k.frame(0, 0.92, -0.05, 0, () => {
-      k.box(1.5, 0.12, 1.1, [0, 0.06, 0], '#7a3a22', 'matte');
-      k.add(new THREE.SphereGeometry(0.7, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), { pos: [0, 0.12, 0], scale: [1, 0.75, 0.8], color: '#a8472f', mat: 'matte' });
-      k.rbox(0.5, 0.32, 0.1, [0, 0.3, 0.52], '#ff7a2a', 'glow', null, 0.08);
-      k.cyl(0.08, 0.7, [0.35, 0.8, -0.2], PAL.charcoal, 'metal', 10);
+      k.box(1.6, 0.14, 1.15, [0, 0.07, 0], '#2a2c31', 'satin');
+      k.add(new THREE.SphereGeometry(0.72, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), { pos: [0, 0.14, 0], scale: [1, 0.78, 0.82], color: '#b0533a', mat: 'matte' });
+      for (let i = 0; i < 14; i++) { const a = (i / 14) * Math.PI; k.box(0.13, 0.07, 0.05, [Math.cos(a) * 0.36, 0.17 + Math.sin(a) * 0.3, 0.6], '#d8cfc2', 'matte', [0, 0, a - Math.PI / 2]); }
+      k.rbox(0.52, 0.32, 0.12, [0, 0.31, 0.55], '#ff6a1a', 'glow', null, 0.1);
+      k.rbox(0.36, 0.18, 0.13, [0, 0.27, 0.56], '#ffd27a', 'glow', null, 0.06);
+      k.cyl(0.09, 0.8, [0.38, 0.86, -0.22], '#1d1e21', 'metal', 12);
+      k.cyl(0.11, 0.05, [0.38, 1.27, -0.22], PAL.brass, 'metal', 12);
+      k.box(0.06, 0.04, 0.9, [-0.62, 0.17, 0.25], PAL.walnut, 'satin', [0, 0.4, 0]);
+      k.cyl(0.13, 0.008, [-0.45, 0.19, 0.62], '#c9cfd4', 'metal', 14);
     });
   } else if (kind === 'dessert') {
-    k.box(1.5, 0.5, 0.6, [0, 1.17, 0], '#dfe8ee', 'glass');
-    k.box(1.52, 0.03, 0.62, [0, 1.43, 0], PAL.brass, 'metal');
+    k.box(1.56, 0.04, 0.64, [0, 0.94, 0], PAL.marble, 'gloss');
+    k.box(1.5, 0.48, 0.6, [0, 1.2, 0], '#dfe8ee', 'glass');
+    for (const sz of [-1, 1]) k.box(1.52, 0.025, 0.025, [0, 1.45, sz * 0.3], PAL.brass, 'metal');
+    for (const sx of [-1, 1]) { k.box(0.025, 0.025, 0.62, [sx * 0.75, 1.45, 0], PAL.brass, 'metal'); for (const sz of [-1, 1]) k.box(0.025, 0.5, 0.025, [sx * 0.75, 1.2, sz * 0.3], PAL.brass, 'metal'); }
+    k.box(1.46, 0.012, 0.02, [0, 1.43, 0.29], '#fff2d6', 'glow');
     for (let i = 0; i < 4; i++) {
       const x = -0.54 + i * 0.36;
-      k.cyl(0.13, 0.015, [x, 0.97, 0], '#ffffff', 'gloss', 16);
-      k.cyl(0.11, 0.13, [x, 1.05, 0], ['#5a2e1a', '#f2d7c8', '#e85a7a', '#3a1c0f'][i], 'satin', 16);
-      k.sphere(0.02, 0.02, 0.02, [x, 1.13, 0], '#e8263c', 'gloss', 6);
+      k.cyl(0.035, 0.08, [x, 1.0, 0], PAL.brass, 'metal', 10);
+      k.cyl(0.14, 0.012, [x, 1.045, 0], '#ffffff', 'gloss', 18);
+      k.cyl(0.11, 0.13, [x, 1.115, 0], ['#5a2e1a', '#f2d7c8', '#e85a7a', '#3a1c0f'][i], 'satin', 18);
+      k.cyl(0.112, 0.02, [x, 1.17, 0], ['#3a1c0f', '#fff6ea', '#ffd0dc', '#f5e6d0'][i], 'gloss', 18);
+      for (let j = 0; j < 3; j++) k.sphere(0.018, 0.018, 0.018, [x + (j - 1) * 0.04, 1.195, 0.02], '#e8263c', 'gloss', 6);
     }
   } else if (kind === 'bar') {
     // the bar draws itself elsewhere

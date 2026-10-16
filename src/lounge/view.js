@@ -6,6 +6,23 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
+
+// a gentle film look: warm highlights, slightly richer colour and a soft vignette
+const GradeShader = {
+  uniforms: { tDiffuse: { value: null }, uVig: { value: 0.42 }, uSat: { value: 1.12 }, uWarm: { value: 0.04 } },
+  vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+  fragmentShader: `uniform sampler2D tDiffuse; uniform float uVig; uniform float uSat; uniform float uWarm; varying vec2 vUv;
+    void main(){
+      vec4 c = texture2D(tDiffuse, vUv);
+      float l = dot(c.rgb, vec3(0.2126, 0.7152, 0.0722));
+      c.rgb = mix(vec3(l), c.rgb, uSat);
+      c.rgb *= vec3(1.0 + uWarm, 1.0, 1.0 - uWarm);
+      vec2 d = vUv - 0.5; d.x *= 0.8;
+      c.rgb *= mix(1.0, smoothstep(0.85, 0.2, length(d)), uVig);
+      gl_FragColor = c;
+    }`,
+};
 
 /** game units (100 per metre, y towards the street) -> three.js metres */
 export const U = 0.01;
@@ -109,6 +126,8 @@ export class View {
     c.addPass(new RenderPass(this.scene, this.camera));
     this.bloom = new UnrealBloomPass(new THREE.Vector2(size.x, size.y), 0.5, 0.5, 1.6);
     c.addPass(this.bloom);
+    this.grade = new ShaderPass(GradeShader);
+    c.addPass(this.grade);
     c.addPass(new OutputPass());
     this.composer = c;
   }
