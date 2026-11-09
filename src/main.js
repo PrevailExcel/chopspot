@@ -3,6 +3,7 @@ import '@fontsource/fredoka/latin-500.css';
 import '@fontsource/fredoka/latin-600.css';
 import '@fontsource/fredoka/latin-700.css';
 import './install.js'; // must load first to catch the browser's install prompt
+import { Cloud } from './cloud.js';
 import BootScene from './scenes/BootScene.js';
 import StandScene from './scenes/StandScene.js';
 import BukaScene from './scenes/BukaScene.js';
@@ -22,6 +23,8 @@ async function start() {
       new Promise((r) => setTimeout(r, 2500)),
     ]);
   } catch (e) { /* fall back to system font */ }
+  // a cleared browser (or another phone) gets its progress back from the cloud before the game loads
+  await Promise.race([Cloud.pullOnStart(), new Promise((r) => setTimeout(r, 4000))]).catch(() => {});
 
   const { w, h } = size();
   const game = new Phaser.Game({

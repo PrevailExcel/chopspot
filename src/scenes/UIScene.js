@@ -8,6 +8,7 @@ import { SKIN_TONES, OUTFITS, HAIR, defaultProfile, lookFromProfile } from '../p
 import { Install, INSTALL_BONUS } from '../install.js';
 import { PROJECTS, PROJECTS_SHOW_CASH } from '../config.js';
 import { projectCost, projectBonus, honour } from '../state.js';
+import { Cloud } from '../cloud.js';
 
 const JOY_R = 58;
 let titleDone = false; // the title screen shows once per app launch, not on every branch trip
@@ -734,8 +735,18 @@ export default class UIScene extends Phaser.Scene {
   showSettings() {
     const s = this.gameScene.gs.settings;
     this.openModal((card) => {
-      const w = Math.min(320, this.W - 40), h = 500;
+      const w = Math.min(320, this.W - 40), h = Cloud.enabled ? 556 : 500;
       this.card(card, w, h, 'Settings', 0x2a3550);
+      if (Cloud.enabled) {
+        const y = -h / 2 + 96 + 5 * 54 + 8;
+        if (Cloud.linked) {
+          card.add(this.txt(0, y - 12, `Saved to ${Cloud.showPhone()}`, 15, 700, '#2f7d4c').setOrigin(0.5));
+          const sync = label(this, 0, y + 12, 'Save now', { size: 14, color: '#0f8b8d', stroke: null, res: this.dpr * 1.5 });
+          sync.setInteractive({ useHandCursor: true });
+          sync.on('pointerdown', () => { Cloud.push(this.gameScene.gs, true); this.toast('Progress saved'); });
+          card.add(sync);
+        } else this.bigButton(card, 0, y, 'Save progress', 0x0f8b8d, () => this.showCloudSave(false), 220, 46, 18);
+      }
       // graphics quality for the 3D restaurant (Auto picks from the phone)
       const gy = -h / 2 + 96 + 3 * 54;
       card.add(this.txt(-w / 2 + 26, gy, 'Graphics', 18, 600).setOrigin(0, 0.5));
@@ -772,6 +783,68 @@ export default class UIScene extends Phaser.Scene {
       reset.on('pointerdown', () => this.confirmReset());
       card.add(reset);
     }, 'settings');
+  }
+
+  // ---------- cloud save: phone number + PIN ----------
+  showCloudSave(prompted) {
+    const gs = this.gameScene.gs;
+    let phone = null; let pin = null; let busy = false;
+    this.openModal((card, m) => {
+      const w = Math.min(320, this.W - 32), h = 360;
+      this.card(card, w, h, 'Save your progress', 0x0f8b8d);
+      this.closeX(card, w, h);
+      card.add(this.txt(0, -h / 2 + 84, 'Keep your money safe and play\non any phone.', 14, 500, '#3a2a1a', { align: 'center' }).setOrigin(0.5));
+      const err = this.txt(0, 70, '', 13, 600, '#c0392b', { align: 'center' }).setOrigin(0.5);
+      card.add(err);
+      const field = (type, ph, max) => {
+        const el = document.createElement('input');
+        el.type = type; el.placeholder = ph; el.maxLength = max; el.autocomplete = 'off';
+        el.inputMode = 'numeric';
+        Object.assign(el.style, {
+          position: 'fixed', width: '220px', height: '44px', boxSizing: 'border-box', zIndex: '20',
+          font: '600 18px Fredoka, system-ui, sans-serif', textAlign: 'center', color: '#3a2a1a', letterSpacing: type === 'password' ? '6px' : '1px',
+          background: '#ffffff', border: '2px solid #e0cfa8', borderRadius: '12px', outline: 'none', padding: '0 10px',
+        });
+        el.addEventListener('input', () => { el.value = el.value.replace(type === 'password' ? /\D/g : /[^\d+ ]/g, ''); el.style.borderColor = '#e0cfa8'; err.setText(''); });
+        document.body.appendChild(el);
+        return el;
+      };
+      phone = field('tel', 'Phone number', 16);
+      pin = field('password', '4-digit PIN', 4);
+      pin.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
+      const place = () => {
+        phone.style.left = `${this.W / 2 - 110}px`; phone.style.top = `${this.H / 2 - h / 2 + 118}px`;
+        pin.style.left = `${this.W / 2 - 110}px`; pin.style.top = `${this.H / 2 - h / 2 + 172}px`;
+      };
+      place();
+      const submit = async () => {
+        if (busy) return;
+        const digits = phone.value.replace(/\D/g, '');
+        if (digits.length < 10) { phone.style.borderColor = '#e33d3d'; err.setText('Enter your phone number'); Sound.play('deny'); return; }
+        if (!/^\d{4}$/.test(pin.value)) { pin.style.borderColor = '#e33d3d'; err.setText('PIN must be 4 digits'); Sound.play('deny'); return; }
+        busy = true; err.setColor('#7a6450').setText('Saving…');
+        const res = await Cloud.connect(phone.value, pin.value, gs);
+        busy = false;
+        if (!this.modal || this.modal !== m) return;
+        if (!res.ok) { err.setColor('#c0392b').setText(res.error); Sound.play('deny'); return; }
+        this.closeModal();
+        Haptic.tap('medium');
+        if (res.replaced) { this.cloudReloading = true; this.toast('Welcome back! Loading your progress'); this.time.delayedCall(900, () => this.game.events.emit('cloud-reload')); }
+        else this.toast(`Progress saved to ${Cloud.showPhone()}`);
+      };
+      this.bigButton(card, 0, h / 2 - 70, 'Save', 0x2bb34a, submit, 220);
+      if (prompted) {
+        const later = label(this, 0, h / 2 - 24, 'Not now', { size: 15, color: '#7a6450', stroke: null, res: this.dpr * 1.5 });
+        later.setInteractive({ useHandCursor: true }); later.on('pointerdown', () => this.closeModal());
+        card.add(later);
+      } else card.add(this.txt(0, h / 2 - 24, 'Same number and PIN on another phone', 12, 500, '#7a6450').setOrigin(0.5));
+      m.relayout = () => { card.setPosition(this.W / 2, this.H / 2); place(); };
+      m.onClose = () => {
+        phone.remove(); pin.remove();
+        // came from the character screen and nothing to restore: go back to it
+        if (!gs.profile && !this.cloudReloading) this.time.delayedCall(10, () => this.showCreator());
+      };
+    }, 'cloud');
   }
 
   confirmReset() {
@@ -875,6 +948,14 @@ export default class UIScene extends Phaser.Scene {
   }
 
   onMoment(moment) {
+    if (moment !== 'start' && Cloud.shouldAsk(this.gameScene.gs)) {
+      this.time.delayedCall(1400, () => {
+        if (this.modal || this.titleOpen || this.upPanel || !Cloud.shouldAsk(this.gameScene.gs)) return;
+        Cloud.markAsked();
+        this.showCloudSave(true);
+      });
+      return;
+    }
     if (!Install.shouldAsk(moment)) return;
     // wait for the current moment (confetti, a modal) to settle before asking
     this.time.delayedCall(moment === 'start' ? 300 : 1400, () => {
@@ -1011,9 +1092,16 @@ export default class UIScene extends Phaser.Scene {
     if (kb) kb.disableGlobalCapture();
     let input = null;
     const open = () => this.openModal((card, m) => {
-      const w = Math.min(350, this.W - 20), h = Math.min(590, this.H - 20);
+      const back = first && Cloud.enabled;
+      const w = Math.min(350, this.W - 20), h = Math.min(back ? 620 : 590, this.H - 20);
       const top = -h / 2;
       this.card(card, w, h, first ? "Who's running the spot?" : 'Your character', 0xff7a1a);
+      if (back) {
+        // a cleared browser or a new phone: get your progress back
+        const have = label(this, 0, h / 2 - 20, 'I already have a save', { size: 14, color: '#0f8b8d', stroke: null, res: this.dpr * 1.5 });
+        have.setInteractive({ useHandCursor: true }); have.on('pointerdown', () => { Sound.play('click'); this.showCloudSave(false); });
+        card.add(have);
+      }
       // live preview
       const stage = this.add.graphics();
       stage.fillStyle(0xf3e3c3, 1); stage.fillEllipse(0, top + 236, 150, 30);
@@ -1075,7 +1163,7 @@ export default class UIScene extends Phaser.Scene {
       }
       input.value = p.name;
       placeInput();
-      this.bigButton(card, 0, h / 2 - 48, first ? 'Start cooking!' : 'Save', 0x2bb34a, () => {
+      this.bigButton(card, 0, h / 2 - (back ? 62 : 48), first ? 'Start cooking!' : 'Save', 0x2bb34a, () => {
         const name = (p.name || '').trim();
         if (!name) { input.style.borderColor = '#e33d3d'; input.focus(); Sound.play('deny'); return; }
         gs.profile = { name: name.charAt(0).toUpperCase() + name.slice(1), gender: p.gender, skin: p.skin, outfit: p.outfit, hair: p.hair };

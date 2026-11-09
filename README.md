@@ -82,6 +82,12 @@ Everything is in **`src/ads.js`**:
 
 The town-hall button under the map opens **Give back to Aba**: six community projects (fix Faulks Road, a borehole, solar for Ariaria Market, a scholarship fund, the youth league, loans for small traders). Each has 15 levels, every level costs double the last (₦25k at the start, hundreds of millions at the top), and each gives a small permanent bonus to **every** branch: more customers, more patience, faster staff, higher prices, more earned while away, bigger cash boxes. The city gives you a title as you build (Good Neighbour → Father of the City). Numbers live in `PROJECTS` and `HONOURS` in `src/config.js`; the bonus maths is `projectBonus()` in `src/state.js`.
 
+## Cloud save (phone number + PIN)
+
+Progress normally lives only in the browser, and Safari deletes it after 7 days without a visit. Cloud save fixes that: players save with their phone number and a 4-digit PIN, and get everything back on any phone or after a wiped browser ("I already have a save" on the character screen, or Settings → Save progress). The save with more lifetime earnings always wins, in both directions, without asking. The game asks once at a good moment (after a fame level-up or a goal, once a player has something to lose; sooner on iPhones), at most every 6 hours and 6 times in all.
+
+The server is one PHP file in `server/` (see `server/README.md`). Set `VITE_SAVE_API` in Vercel to its address; without it, cloud save stays hidden. Client code: `src/cloud.js`.
+
 ## Money while you're away
 
 Every branch keeps earning while you're at the other one, or while the app is closed. How much depends on how many staff you've hired there.

@@ -13,6 +13,7 @@ import { Haptic, Store } from '../platform.js';
 import { saveState, freshBranch, pendingNow, priceMult as basePrice, cashCap, passiveRate, setProjectLevels, projectBonus, projectCost, honour } from '../state.js';
 import { lookFromProfile, possessive } from '../profile.js';
 import { prepareBranch } from '../lounge/loader.js';
+import { Cloud } from '../cloud.js';
 
 export const ADA_LOOK = {
   skin: 0x8d5a36, shirt: 0xff7a1a, pattern: 0x0f8b8d, pants: 0x2a3550, dress: true,
@@ -97,10 +98,12 @@ export default class BranchScene extends Phaser.Scene {
     this.onGame('buy-branch', this.buyBranch);
     this.onGame('collect-branch', this.collectRemote);
     this.onGame('claim-goal', this.claimGoal);
+    // the cloud had a bigger save: it is already in storage, so stop saving this one and restart
+    this.onGame('cloud-reload', () => { this.resetting = true; window.location.reload(); });
 
     this.time.addEvent({ delay: 2000, loop: true, callback: () => this.save() });
-    this.visHandler = () => { if (document.hidden) { this.save(); Sound.suspend(); } else Sound.resume(); };
-    this.hideHandler = () => this.save();
+    this.visHandler = () => { if (document.hidden) { this.save(); Cloud.push(this.gs, true); Sound.suspend(); } else Sound.resume(); };
+    this.hideHandler = () => { this.save(); Cloud.push(this.gs, true); };
     document.addEventListener('visibilitychange', this.visHandler);
     window.addEventListener('pagehide', this.hideHandler);
     this.events.once('shutdown', () => {
@@ -757,6 +760,7 @@ export default class BranchScene extends Phaser.Scene {
   resetGame() {
     this.resetting = true;
     Store.clear();
+    Cloud.logout();
     window.location.reload();
   }
 
@@ -773,6 +777,7 @@ export default class BranchScene extends Phaser.Scene {
     this.saveBranch();
     b.leftAt = Date.now(); b.pending = 0;
     saveState(this.gs);
+    Cloud.push(this.gs);
   }
 
   update(time, delta) {
