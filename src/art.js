@@ -780,6 +780,7 @@ export function buildAllTextures(scene) {
   buildIcons(scene);
   buildBuka(scene);
   buildLoungeIcons(scene);
+  buildProjectIcons(scene);
 }
 
 // =====================================================================
@@ -1338,6 +1339,61 @@ function buildLoungeIcons(scene) {
     c.restore();
     c.strokeStyle = '#ffffff'; c.lineWidth = 2.2; c.lineCap = 'round';
     for (const [a, r] of [[-0.5, 22], [-0.1, 24]]) { c.beginPath(); c.arc(32, 35, r, a - 0.25 - Math.PI / 2 + 1.9, a + 0.25 - Math.PI / 2 + 1.9); c.stroke(); }
+  });
+}
+
+// =====================================================================
+// "Give back to Aba" community projects
+// =====================================================================
+function buildProjectIcons(scene) {
+  const S = 64;
+  const T = (key, fn) => tex(scene, key, S, S, 0.5, 0.5, fn);
+  const disc = (c, a, b) => { c.beginPath(); c.arc(32, 32, 28, 0, 7); c.fillStyle = lin(c, 0, 4, 0, 60, [[0, a], [1, b]]); c.fill(); c.strokeStyle = 'rgba(0,0,0,0.25)'; c.lineWidth = 2; c.stroke(); };
+  T('icon_proj_road', (c) => {
+    disc(c, '#9fd36a', '#5aa83a');
+    c.beginPath(); c.moveTo(24, 8); c.lineTo(40, 8); c.lineTo(54, 58); c.lineTo(10, 58); c.closePath(); c.fillStyle = '#4b525b'; c.fill();
+    c.fillStyle = '#ffd23f'; for (const [y, h, w] of [[12, 6, 3], [24, 8, 4], [38, 10, 5]]) rr(c, 32 - w / 2, y, w, h, 1), c.fill();
+    c.fillStyle = '#ff7a1a'; c.beginPath(); c.moveTo(48, 30); c.lineTo(54, 46); c.lineTo(42, 46); c.closePath(); c.fill();
+    c.fillStyle = '#ffffff'; c.fillRect(44, 39, 8, 2.5);
+  });
+  T('icon_proj_water', (c) => {
+    disc(c, '#bfe8ff', '#5ab0d8');
+    rr(c, 26, 30, 12, 26, 2); c.fillStyle = '#6b737b'; c.fill();
+    rr(c, 20, 24, 24, 8, 3); c.fillStyle = '#8a939b'; c.fill();
+    rr(c, 38, 26, 14, 5, 2); c.fill();
+    c.fillStyle = '#2c7be5'; c.beginPath(); c.moveTo(49, 34); c.quadraticCurveTo(55, 44, 49, 48); c.quadraticCurveTo(43, 44, 49, 34); c.fill();
+    c.fillStyle = '#e9edf0'; rr(c, 10, 8, 20, 14, 3); c.fill(); c.fillStyle = '#2c7be5'; rr(c, 12, 14, 16, 6, 2); c.fill();
+  });
+  T('icon_proj_solar', (c) => {
+    disc(c, '#ffe58a', '#f5a400');
+    c.fillStyle = '#ffffff'; c.beginPath(); c.arc(46, 16, 7, 0, 7); c.fill();
+    c.save(); c.translate(30, 38); c.transform(1, 0, -0.35, 1, 0, 0);
+    rr(c, -16, -12, 32, 22, 2); c.fillStyle = '#1d3b6a'; c.fill(); c.strokeStyle = '#c9d6e6'; c.lineWidth = 1.5; c.stroke();
+    c.beginPath(); for (const x of [-5, 5]) { c.moveTo(x, -12); c.lineTo(x, 10); } c.moveTo(-16, -1); c.lineTo(16, -1); c.stroke();
+    c.restore();
+    c.fillStyle = '#6b737b'; c.fillRect(27, 48, 4, 10);
+  });
+  T('icon_proj_school', (c) => {
+    disc(c, '#d9c4ff', '#7b4fd6');
+    c.beginPath(); c.moveTo(6, 26); c.lineTo(32, 14); c.lineTo(58, 26); c.lineTo(32, 38); c.closePath(); c.fillStyle = '#2a2c31'; c.fill();
+    c.beginPath(); c.moveTo(16, 31); c.lineTo(16, 42); c.quadraticCurveTo(32, 52, 48, 42); c.lineTo(48, 31); c.lineTo(32, 38); c.closePath(); c.fill();
+    c.strokeStyle = '#ffd23f'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(50, 27); c.lineTo(50, 44); c.stroke();
+    c.fillStyle = '#ffd23f'; c.beginPath(); c.arc(50, 46, 3, 0, 7); c.fill();
+  });
+  T('icon_proj_league', (c) => {
+    disc(c, '#9fe0b0', '#2f9a55');
+    c.beginPath(); c.arc(32, 32, 17, 0, 7); c.fillStyle = '#ffffff'; c.fill(); c.strokeStyle = '#1b1b1b'; c.lineWidth = 2; c.stroke();
+    c.fillStyle = '#1b1b1b';
+    const pent = (x, y, r) => { c.beginPath(); for (let i = 0; i < 5; i++) { const a = -Math.PI / 2 + i * Math.PI * 2 / 5; c.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r); } c.closePath(); c.fill(); };
+    pent(32, 32, 6); for (let i = 0; i < 5; i++) { const a = -Math.PI / 2 + i * Math.PI * 2 / 5; pent(32 + Math.cos(a) * 15, 32 + Math.sin(a) * 15, 4); }
+  });
+  T('icon_proj_traders', (c) => {
+    disc(c, '#ffd0a8', '#e8452c');
+    c.beginPath(); c.moveTo(8, 30); c.lineTo(32, 12); c.lineTo(56, 30); c.closePath(); c.fillStyle = '#0f8b8d'; c.fill();
+    rr(c, 12, 30, 40, 24, 2); c.fillStyle = '#fff3d6'; c.fill();
+    c.fillStyle = '#ff7a1a'; for (let i = 0; i < 4; i++) rr(c, 14 + i * 9.5, 34, 7, 18, 1), c.fill();
+    c.fillStyle = '#3fb46b'; c.beginPath(); c.arc(46, 46, 9, 0, 7); c.fill(); c.strokeStyle = '#1d3b1a'; c.lineWidth = 1.5; c.stroke();
+    c.fillStyle = '#ffffff'; c.font = '700 11px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('N', 46, 46.5);
   });
 }
 

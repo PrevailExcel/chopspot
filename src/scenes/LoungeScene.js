@@ -73,7 +73,10 @@ export default class LoungeScene extends BranchScene {
     this.sinkZone = new E.Zone3D(this.ctx, LOUNGE.sink.zone, { color: 0x5ec2ff });
     this.sinkPile = new E.Pile3D(this.ctx, 'dirty', (i) => this.world.sinkPos(i), { maxVisual: 24 });
     this.rackPile = new E.Pile3D(this.ctx, 'clean', (i) => this.world.rackPos(i), { maxVisual: 36 });
-    this.washT = 0; this.refillCool = 4;
+    this.washT = 0; this.refillCool = 4; this.porterT = 0;
+    this.world.buildDishReturn();
+    this.returnZone = new E.Zone3D(this.ctx, LOUNGE.dishReturn.zone, { color: 0x5ec2ff });
+    this.syncColliders();
     this.setupFx();
     const T = LOUNGE.till;
     this.tillCash = this.addCashPile(T.x - 14, T.y - 4, { h: 105, maxVisual: 18, unit: 300, zoneR: 78, cols: 3 });
@@ -85,7 +88,7 @@ export default class LoungeScene extends BranchScene {
   /** steam over the sink while plates are washed */
   setupFx() {
     const fx = this.ctx.fx; const S = LOUNGE.sink;
-    fx.emitter('steam', S.x + 25, S.y + 5, 96, 5, () => this.sinkPile.count > 0 && (this.player.busy === 'wash' || this.helpers.some((h) => h.washing)), { spread: 0.4 });
+    fx.emitter('steam', S.x + 25, S.y + 5, 96, 5, () => this.sinkPile.count > 0, { spread: 0.4 });
   }
   machineFx() {
     const fx = this.ctx.fx;
@@ -105,6 +108,19 @@ export default class LoungeScene extends BranchScene {
     const D = LOUNGE.kitchenDoor;
     const near = (w) => w && Math.abs(w.x - D.x) < 120 && Math.abs(w.y - D.y) < 95;
     this.world.kDoorBusy = near(this.player) || this.helpers.some((h) => near(h.w));
+  }
+
+  /**
+   * Never leave the player boxed in: if new furniture (or an old save) puts them somewhere
+   * they cannot walk out of, move them to the nearest spot that connects to the gate path.
+   */
+  unstickPlayer() {
+    const p = this.player; if (!p || !this.E) return;
+    const spot = this.E.escapePoint(this.colliders, LOUNGE.bounds, LOUNGE.spawn, p, this.playerRadius());
+    if (!spot) return;
+    p.x = spot.x; p.y = spot.y; p.sync && p.sync();
+    this.autoPath = null;
+    this.b.px = p.x; this.b.py = p.y;
   }
 
   syncColliders() { const W = this.world; while (this.colSynced < W.colliders.length) this.addCollider(W.colliders[this.colSynced++]); }
@@ -432,6 +448,7 @@ export default class LoungeScene extends BranchScene {
     const cands = [
       { x: this.hostZone.cx, y: this.hostZone.cy },
       { x: this.sinkZone.cx, y: this.sinkZone.cy },
+      { x: this.returnZone.cx, y: this.returnZone.cy },
       ...Object.values(this.producers).map((p) => ({ x: p.zone.cx, y: p.zone.cy })),
       ...this.tables.map((t) => t.service),
       ...this.pads.map((p) => ({ x: p.x, y: p.y })),
@@ -473,8 +490,9 @@ export default class LoungeScene extends BranchScene {
       else if (!q && (t.plates.count > 0 || t.cash.value > 0) && away(t.service.x, t.service.y)) want.push(['t:' + t.id, t.x, t.y, 120, t.plates.count > 0 ? 'CLEAR' : 'COLLECT', t.plates.count > 0 ? '#7b4fd6' : '#2f9a55']);
     }
     const sz = this.sinkZone;
-    if (p.countOf('dirty') > 0 && away(sz.cx, sz.cy)) want.push(['sink', LOUNGE.sink.x, LOUNGE.sink.y + 20, 175, 'TO THE SINK', '#0f8b8d']);
-    else if (this.sinkPile.count > 0 && !this.isUnlocked('washer') && away(sz.cx, sz.cy)) want.push(['sink', LOUNGE.sink.x, LOUNGE.sink.y + 20, 175, this.rackPile.count < 4 ? 'WASH PLATES!' : 'WASH PLATES', this.rackPile.count < 4 ? '#d64545' : '#0f8b8d']);
+    const rz = this.returnZone;
+    if (p.countOf('dirty') > 0 && away(rz.cx, rz.cy)) want.push(['ret', LOUNGE.dishReturn.x, LOUNGE.dishReturn.y, 160, 'DISH RETURN', '#0f8b8d']);
+    else if (this.sinkPile.count > 0 && this.rackPile.count < 4 && !this.isUnlocked('washer') && away(sz.cx, sz.cy)) want.push(['sink', LOUNGE.sink.x, LOUNGE.sink.y + 20, 175, 'WASH PLATES!', '#d64545']);
     if (Object.values(this.producers).some((pr) => pr.noPlates)) want.push(['noplates', 700, 520, 215, 'NO CLEAN PLATES', '#d64545']);
     for (const g of this.parties) if (g.greet > 0 && g.table && away(g.table.service.x, g.table.service.y)) want.push(['greet:' + g.id, g.table.x, g.table.y, 120, 'GREET', '#c98a1a']);
     if (this.tillCash.value > 0 && away(LOUNGE.till.x, LOUNGE.till.y, 110)) want.push(['till', LOUNGE.till.x, LOUNGE.till.y, 150, 'COLLECT', '#2f9a55']);
@@ -590,6 +608,22 @@ export default class LoungeScene extends BranchScene {
   freeTableFor(size) {
     return this.tables.filter((t) => !t.party && t.plates.count === 0 && t.dishes.length === 0 && t.seats.length >= size)
       .sort((a, b) => a.seats.length - b.seats.length || Math.hypot(a.x - 1000, a.y - 1500) - Math.hypot(b.x - 1000, b.y - 1500))[0] || null;
+  }
+
+  /** after a short wait at the door, guests seat themselves (you or Ifeoma at the host stand are just faster) */
+  selfSeat(dt) {
+    if (!this.tutorialDone() || this.isUnlocked('host')) return;
+    for (const p of this.queue) {
+      if (p.state !== 'queued') continue;
+      p.waited = (p.waited || 0) + dt;
+      if (p.waited < LOUNGE.selfSeat) continue;
+      const t = this.freeTableFor(p.size);
+      if (!t) continue;
+      this.seatParty(p, t, 'self');
+      const c = this.partyCenter(p);
+      this.floatAt(c.x, c.y, 80, 'Found a table', '#ffe9a8', 18);
+      return;
+    }
   }
 
   /** seat the first party in line that fits a free table */
@@ -744,6 +778,7 @@ export default class LoungeScene extends BranchScene {
       const active = this.parties.filter((p) => p.state !== 'leaving').length;
       if (this.queue.length < 4 && active < this.tables.length + 3 && this.tutorialDone()) this.spawnParty();
     }
+    this.selfSeat(dt);
     for (const p of this.parties) {
       if (p.state === 'queued' && p.patience != null) {
         p.patience -= dt;
@@ -801,6 +836,8 @@ export default class LoungeScene extends BranchScene {
       }
     }
     this.interactSink(dt);
+    this.interactReturn();
+    this.porterWash(dt);
     this.checkGreet();
     this.returnSurplus(dt);
     if (this.dropCool > 0) return;
@@ -884,6 +921,28 @@ export default class LoungeScene extends BranchScene {
       this.washT += dt;
       if (this.washT >= LOUNGE.plates.wash / this.washMult()) { this.washT = 0; this.washOne(p); }
     } else if (b.tut === 4 && p.countOf('dirty') === 0) this.finishTutorial();
+  }
+
+  /** the dish return trolley by the kitchen door: drop dirty plates here, the kitchen takes them to the sink */
+  interactReturn() {
+    const p = this.player; const z = this.returnZone;
+    const at = z.contains(p.x, p.y);
+    z.setActive(at);
+    if (!at || p.countOf('dirty') === 0 || this.dropCool > 0) return;
+    this.dropCool = PLAYER.dropEvery;
+    this.toSink(p.removeCarry('dirty'));
+    Haptic.tap('light');
+    if (p.countOf('dirty') === 0) {
+      this.floatAt(p.x, p.y, 120, 'The kitchen will wash them', '#bdf7ff', 17);
+      if (this.b.tut === 4) this.finishTutorial();
+    }
+  }
+
+  /** the kitchen porter washes slowly when nobody else is at the sink */
+  porterWash(dt) {
+    if (this.sinkPile.count <= 0 || this.player.busy === 'wash' || this.helpers.some((h) => h.washing)) { this.porterT = 0; return; }
+    this.porterT += dt;
+    if (this.porterT >= LOUNGE.plates.porter / this.washMult()) { this.porterT = 0; this.washOne(null); }
   }
 
   finishTutorial() {
@@ -992,7 +1051,7 @@ export default class LoungeScene extends BranchScene {
   // per frame
   updateBranch(dt) {
     if (this.navDirty) { this.ctx.nav.rebuild(this.colliders); this.navDirty = false; }
-    this.hostZone.update(dt); this.sinkZone.update(dt);
+    this.hostZone.update(dt); this.sinkZone.update(dt); this.returnZone.update(dt);
     this.updateTableSteam(dt);
     this.updateKitchenDoor();
     this.checkPlates(dt);
@@ -1043,7 +1102,10 @@ export default class LoungeScene extends BranchScene {
       if (t) return { target: { ...t.service, r: 70 }, text: 'Collect the bill and clear the plates' };
       return { text: 'Let them enjoy their meal…' };
     }
-    if (b.tut === 4) return { target: zc(this.sinkZone), text: p.countOf('dirty') > 0 ? 'Walk into the kitchen (by the bar) and take the plates to the sink' : 'Stand at the sink to wash the plates. The chefs need clean plates!' };
+    if (b.tut === 4) {
+      if (p.countOf('dirty') > 0) return { target: zc(this.returnZone), text: 'Drop the dirty plates at the dish return by the kitchen door' };
+      this.finishTutorial();
+    }
     return this.freeGoal();
   }
 
@@ -1058,15 +1120,16 @@ export default class LoungeScene extends BranchScene {
   urgentGoal() {
     const p = this.player;
     const sinkT = { x: this.sinkZone.cx, y: this.sinkZone.cy, r: 50 };
-    if (p.countOf('dirty') > 0 && p.carryCount >= this.carryCap()) return { target: sinkT, text: 'Your tray is full of plates. Take them to the sink in the kitchen' };
+    const retT = { x: this.returnZone.cx, y: this.returnZone.cy, r: 50 };
+    if (p.countOf('dirty') > 0 && p.carryCount >= this.carryCap()) return { target: retT, text: 'Your tray is full of plates. Drop them at the dish return by the kitchen door' };
     const ordered = this.parties.filter((q) => q.state === 'ordered' && q.table).sort((a, b) => a.patience - b.patience);
     for (const q of ordered) {
       const k = this.partyTypes(q).find((x) => this.partyNeeds(q, x) > 0 && p.countOf(x) > 0);
       if (k) return { target: { ...q.table.service, r: 70 }, text: `Serve ${this.tableName(q.table)}` };
     }
     const stalled = Object.values(this.producers).some((pr) => pr.noPlates);
-    if (stalled && p.countOf('dirty') > 0) return { target: sinkT, text: 'The chefs are out of clean plates! Take your plates to the sink' };
-    if (stalled && this.sinkPile.count > 0 && !this.isUnlocked('washer')) return { target: sinkT, text: 'The chefs are out of clean plates! Wash plates at the sink' };
+    if (stalled && p.countOf('dirty') > 0) return { target: retT, text: 'The chefs are out of clean plates! Drop your plates at the dish return' };
+    if (stalled && this.sinkPile.count > 3 && !this.isUnlocked('washer')) return { target: sinkT, text: 'The chefs are out of clean plates! Help wash at the sink to go faster' };
     const g = this.parties.find((q) => q.greet > 0 && q.table);
     if (g) return { target: { ...g.table.service, r: 80 }, text: `${this.tableName(g.table)} wants to meet the owner. Go and greet them!` };
     return null;
@@ -1097,7 +1160,7 @@ export default class LoungeScene extends BranchScene {
         const hurry = q.patience < q.patienceMax * 0.4 ? 'Hurry! ' : '';
         const what = `${n} ${this.E.itemName(src.type, n)}`;
         if (src.count > 0) return { target: { x: src.zone.cx, y: src.zone.cy, r: 45 }, text: `${hurry}${this.tableName(q.table)} ordered ${what}. Pick up at the ${this.stationName(src)}` };
-        if (src.noPlates) return { target: sinkT, text: `The ${this.stationName(src)} needs clean plates. Wash some at the sink` };
+        if (src.noPlates) return { target: sinkT, text: `The ${this.stationName(src)} is waiting for clean plates. Wash at the sink to speed it up` };
         return { target: { x: src.zone.cx, y: src.zone.cy, r: 45 }, text: `${hurry}${what} for ${this.tableName(q.table)} coming up at the ${this.stationName(src)}…` };
       }
     }
@@ -1106,7 +1169,7 @@ export default class LoungeScene extends BranchScene {
       const dirty = this.tables.filter((t) => !t.party && ((room && t.plates.count > 0) || t.cash.value > 0)).sort((a, b) => Math.hypot(a.x - p.x, a.y - p.y) - Math.hypot(b.x - p.x, b.y - p.y))[0];
       if (dirty) return { target: { ...dirty.service, r: 70 }, text: dirty.plates.count > 0 && room ? `Clear ${this.tableName(dirty)} and collect the bill` : `Collect the bill at ${this.tableName(dirty)}` };
     }
-    if (p.countOf('dirty') > 0) return { target: sinkT, text: 'Take the dirty plates to the sink in the kitchen' };
+    if (p.countOf('dirty') > 0) return { target: { x: this.returnZone.cx, y: this.returnZone.cy, r: 50 }, text: 'Drop the dirty plates at the dish return by the kitchen door' };
     const extra = p.carryItems.find((c) => c.type !== 'dirty' && p.countOf(c.type) > this.wantedCount(c.type));
     if (extra) { const pr = this.producersOf(extra.type)[0]; if (pr) return { target: { x: pr.zone.cx, y: pr.zone.cy, r: 45 }, text: `Nobody needs that ${this.E.itemName(extra.type, 1)} now. Put it back at the ${this.stationName(pr)}` }; }
     if (this.boothZone && this.gs.cash > 0) {
@@ -1114,7 +1177,7 @@ export default class LoungeScene extends BranchScene {
       const next = this.pads[0];
       if (up && this.gs.cash >= this.upgradeCost(up) && (!next || this.gs.cash < next.remaining * 0.5)) return { target: { x: this.boothZone.cx, y: this.boothZone.cy, r: 45 }, text: `You can afford the ${up.name} upgrade. Visit the Upgrade Desk` };
     }
-    if (this.sinkPile.count > 0 && !this.isUnlocked('washer')) return { target: sinkT, text: `${this.sinkPile.count} dirty plate${this.sinkPile.count > 1 ? 's' : ''} at the sink. Wash them so the chefs never run out` };
+    if (this.sinkPile.count > 8 && this.rackPile.count < 8 && !this.isUnlocked('washer')) return { target: sinkT, text: `${this.sinkPile.count} plates are piling up at the sink. Help wash them` };
     const pile = this.cashPiles.filter((c) => c.value > 0).sort((a, b) => b.value - a.value)[0];
     if (pile) return { target: { x: pile.x, y: pile.y, r: 60 }, text: pile === this.tillCash && this.isUnlocked('busser') ? `Emeka banked ${money(pile.value)} at the till. Collect it` : `Collect ${money(pile.value)}` };
     return null;

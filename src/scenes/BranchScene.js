@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { buildBillboards } from '../ads.js';
-import { WORLD, BOUNDS, ITEMS, PLAYER, FAME, RUSH, BRANCHES, BRANCH_ORDER } from '../config.js';
+import { WORLD, BOUNDS, ITEMS, PLAYER, FAME, RUSH, BRANCHES, BRANCH_ORDER, PROJECTS } from '../config.js';
 import { img } from '../art.js';
 import { Rig } from '../entities/Rig.js';
 import { Vehicle } from '../entities/Bus.js';
@@ -10,7 +10,7 @@ import { fly } from '../objects/Fly.js';
 import { label, money } from '../objects/ui.js';
 import { Sound } from '../audio.js';
 import { Haptic, Store } from '../platform.js';
-import { saveState, freshBranch, pendingNow, priceMult as basePrice, cashCap, passiveRate } from '../state.js';
+import { saveState, freshBranch, pendingNow, priceMult as basePrice, cashCap, passiveRate, setProjectLevels, projectBonus, projectCost, honour } from '../state.js';
 import { lookFromProfile, possessive } from '../profile.js';
 import { prepareBranch } from '../lounge/loader.js';
 
@@ -35,6 +35,8 @@ export default class BranchScene extends Phaser.Scene {
     if (!this.gs.branches[key]) this.gs.branches[key] = freshBranch(key);
     this.b = this.gs.branches[key];
     this.def = BRANCHES[key];
+    if (!this.gs.projects) this.gs.projects = {};
+    setProjectLevels(this.gs.projects);
     const st = this.gs;
     Sound.setSfx(st.settings.sfx); Sound.setMusic(st.settings.music); Haptic.set(st.settings.haptic);
 
@@ -63,6 +65,7 @@ export default class BranchScene extends Phaser.Scene {
     this.player = this.makePlayer(this.b.px, this.b.py, this.playerLook());
     (this.b.carry || []).filter((t) => ITEMS[t]).slice(0, this.carryCap()).forEach((type) => { const im = this.player.addCarry(type); im.setScale(0.5); });
     this.resolveCollisions();
+    this.unstickPlayer();
     const cam = this.cameras.main;
     cam.startFollow(this.player, true, 0.14, 0.14);
     cam.setBounds(-260, -320, WORLD.w + 520, WORLD.h + 420);
@@ -87,6 +90,7 @@ export default class BranchScene extends Phaser.Scene {
 
     this.publish();
     this.onGame('buy-upgrade', this.buyUpgrade);
+    this.onGame('buy-project', this.buyProject);
     this.onGame('setting', this.changeSetting);
     this.onGame('reset-game', this.resetGame);
     this.onGame('travel', this.travel);
@@ -157,6 +161,8 @@ export default class BranchScene extends Phaser.Scene {
   startIds() { return []; }
   restore() {}
   afterCreate() {}
+  /** branches with tight spaces move the player out if something gets built around them */
+  unstickPlayer() {}
   saveBranch() {}
   updateBranch() {}
   interactBranch() {}
@@ -174,11 +180,11 @@ export default class BranchScene extends Phaser.Scene {
   unlockCount() { return this.unlockList().filter((u) => this.b.unlocked[u.id]).length; }
   get rushing() { return this.rushLeft > 0; }
   priceMult() { return basePrice(this.branchKey, this.b) * (this.rushing ? RUSH.pay : 1); }
-  demandMult() { return FAME.demand(this.b.fame.lvl) * (this.rushing ? RUSH.demand : 1); }
-  patienceMult() { return FAME.patience(this.b.fame.lvl) * (1 + 0.1 * this.b.up.patience); }
+  demandMult() { return FAME.demand(this.b.fame.lvl) * (this.rushing ? RUSH.demand : 1) * (1 + projectBonus('demand')); }
+  patienceMult() { return FAME.patience(this.b.fame.lvl) * (1 + 0.1 * this.b.up.patience) * (1 + projectBonus('patience')); }
   vehicleWaitMult() { return Math.sqrt(FAME.patience(this.b.fame.lvl)) * (1 + 0.1 * this.b.up.patience); }
   cookMult() { return 1 / Math.pow(0.9, this.b.up.cook); }
-  staffMult() { return 1 + 0.12 * this.b.up.staff; }
+  staffMult() { return (1 + 0.12 * this.b.up.staff) * (1 + projectBonus('staff')); }
   staffSpeed() { return 150 * this.staffMult(); }
   staffCarry() { return 4 + Math.floor(this.b.up.staff * 0.6); }
   carryCap() { return PLAYER.carry + this.b.up.carry; }
@@ -418,7 +424,7 @@ export default class BranchScene extends Phaser.Scene {
     this.shake(160, 0.003);
     this.game.events.emit('toast', `${def.name} unlocked!`);
     this.registry.set('progress', { n: this.unlockCount(), total: this.unlockList().length });
-    this.time.delayedCall(10, () => this.resolveCollisions());
+    this.time.delayedCall(10, () => { this.resolveCollisions(); this.unstickPlayer(); });
     this.refreshPads();
     this.ensureGoals();
     if (id === this.finaleId() && !b.finished) {
@@ -715,6 +721,28 @@ export default class BranchScene extends Phaser.Scene {
     Sound.play('upgrade'); Haptic.tap('medium');
     this.confetti(this.player.x, this.player.y - 80);
     this.game.events.emit('upgrades-changed');
+    this.save();
+  }
+
+  /** "Give back to Aba": a community project with a permanent bonus for every branch */
+  buyProject(id) {
+    const pr = PROJECTS.find((x) => x.id === id); if (!pr) return;
+    const P = this.gs.projects; const lvl = P[id] || 0;
+    if (lvl >= pr.max) return;
+    const cost = projectCost(pr, lvl);
+    if (this.gs.cash < cost) { Sound.play('deny'); return; }
+    const before = honour(P).title;
+    this.spend(cost);
+    P[id] = lvl + 1;
+    setProjectLevels(P);
+    this.b.stats.given = (this.b.stats.given || 0) + cost;
+    this.gs.stats.given = (this.gs.stats.given || 0) + cost;
+    Sound.play('win'); Haptic.tap('heavy');
+    this.confetti(this.player.x, this.player.y - 80);
+    const after = honour(P).title;
+    this.game.events.emit('toast', after !== before ? `Aba now calls you "${after}"!` : `${pr.name}: level ${lvl + 1}. Aba thanks you!`);
+    this.game.events.emit('projects-changed');
+    this.track('project', 1);
     this.save();
   }
 

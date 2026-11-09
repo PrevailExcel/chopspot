@@ -429,24 +429,32 @@ export class World {
   }
 
   buildStage(ghost = false) {
+    // Low and set back from the pass: no tall backdrop, so the grill and pasta chefs behind it stay visible.
     const g = new THREE.Group(); this.root.add(g);
     const k = this.kit();
-    const S = LOUNGE.stage; const x = S.x * U, z = S.y * U;
+    const S = LOUNGE.stage; const x = S.x * U, z = S.y * U; const w = S.w * U, d = S.d * U;
     k.frame(x, 0, z, 0, () => {
-      P.stage(k, 3.8, 3.2);
-      k.frame(-0.8, 0.33, -0.7, 0.3, () => P.drumKit(k));
-      k.frame(1.0, 0.33, -0.3, -0.4, () => P.keyboard(k));
-      P.micStand(k, 0.2, 0.9);
-      P.amp(k, 1.4, -1.2); P.amp(k, -1.6, -1.3);
-      k.box(3.8, 3.0, 0.1, [0, 1.85, -1.62], '#3a2414', 'satin');
-      for (let i = 0; i < 16; i++) k.box(0.12, 2.9, 0.06, [-1.8 + i * 0.24, 1.85, -1.56], PAL.walnut, 'satin');
-      for (const sx of [-1.2, 0, 1.2]) { k.cyl(0.08, 0.16, [sx, 3.15, 1.3], PAL.black, 'metal', 10, [0.6, 0, 0]); k.sphere(0.05, 0.05, 0.05, [sx, 3.08, 1.38], '#fff0c8', 'glow', 8); }
+      P.stage(k, w, d);
+      k.frame(-0.7, 0.33, -0.4, 0.3, () => P.drumKit(k));
+      k.frame(0.85, 0.33, -0.05, -0.4, () => P.keyboard(k));
+      P.micStand(k, 0.15, 0.7);
+      P.amp(k, w / 2 - 0.3, -d / 2 + 0.25); P.amp(k, -w / 2 + 0.3, -d / 2 + 0.25);
+      // a knee-high slatted rail along the back instead of a wall
+      k.box(w, 0.5, 0.06, [0, 0.58, -d / 2 + 0.03], '#3a2414', 'satin');
+      for (let i = 0; i < 13; i++) k.box(0.1, 0.48, 0.05, [-w / 2 + 0.12 + i * (w - 0.24) / 12, 0.58, -d / 2 + 0.07], PAL.walnut, 'satin');
+      k.box(w + 0.04, 0.04, 0.1, [0, 0.85, -d / 2 + 0.04], PAL.brass, 'metal');
+      // two slim brass poles carry the spotlights
+      for (const sx of [-1, 1]) {
+        k.cyl(0.03, 2.6, [sx * (w / 2 - 0.08), 1.63, -d / 2 + 0.08], PAL.brass, 'metal', 8);
+        k.cyl(0.07, 0.14, [sx * (w / 2 - 0.08), 2.85, -d / 2 + 0.2], PAL.black, 'metal', 10, [0.9, 0, 0]);
+        k.sphere(0.045, 0.045, 0.045, [sx * (w / 2 - 0.08), 2.8, -d / 2 + 0.27], '#fff0c8', 'glow', 8);
+      }
     });
     k.build(g, { shadows: this.tier.shadows, ghost });
     if (!ghost) {
-      this.col(S.x - 190, S.y - 160, S.x + 190, S.y + 160);
-      this.pool(x, z + 0.2, 1.9, 0xffb06a, 0.75); this.pool(x - 1.2, z + 0.8, 0.8, 0xffd29a, 0.6); this.pool(x + 1.2, z + 0.8, 0.8, 0xffd29a, 0.6);
-      const band = [['bass', 'm', [x - 0.2, z - 0.1], 0.2], ['keys', 'f', [x + 1.0, z - 0.75], 0.2], ['drums', 'm', [x - 0.8, z - 1.15], 0.25]].map(([act, gender, [px, pz], yaw], i) => {
+      this.col(S.x - S.w / 2, S.y - S.d / 2, S.x + S.w / 2, S.y + S.d / 2);
+      this.pool(x, z + 0.2, 1.6, 0xffb06a, 0.75); this.pool(x - 1.0, z + 0.6, 0.7, 0xffd29a, 0.6); this.pool(x + 1.0, z + 0.6, 0.7, 0xffd29a, 0.6);
+      const band = [['bass', 'm', [x - 0.15, z + 0.05], 0.2], ['keys', 'f', [x + 0.85, z - 0.5], 0.2], ['drums', 'm', [x - 0.7, z - 0.85], 0.25]].map(([act, gender, [px, pz], yaw], i) => {
         const p = new Person(staffLook('band', 70 + i * 11, gender));
         p.setPosition(px, 0.33, pz); p.faceTo(yaw, true); p.action = act;
         if (act === 'drums') p.pose = 'sit';
@@ -486,27 +494,42 @@ export class World {
   }
 
   buildFountain(ghost = false) {
+    // The front garden between the facade (z 16.1) and the compound wall (z 19.5) is only 3.4 m deep,
+    // so the fountain is kept to a 1 m basin with a clear walkway all the way round it.
+    const F = LOUNGE.fountain; const fx = F.x * U, fz = F.y * U, fr = F.r * U;
     const g = new THREE.Group(); this.root.add(g);
-    const k = this.kit(); P.fountain(k, 3.8, 17.9);
-    for (const [x, z] of [[2.0, 16.6], [5.6, 16.6], [2.0, 19.2], [5.6, 19.2]]) P.lantern(k, x, z);
+    const k = this.kit(); P.fountain(k, fx, fz, fr);
+    for (const [x, z] of [[fx - 1.4, fz - 1.1], [fx + 1.4, fz - 1.1], [fx - 1.4, fz + 1.1], [fx + 1.4, fz + 1.1]]) P.lantern(k, x, z);
     k.build(g, { shadows: this.tier.shadows, ghost });
     if (!ghost) {
-      this.col(230, 1640, 530, 1940);
-      this.pool(3.8, 17.9, 2.4, 0x7fd6ff, 0.5);
+      this.col(F.x - F.r, F.y - F.r, F.x + F.r, F.y + F.r);
+      this.pool(fx, fz, fr * 1.6, 0x7fd6ff, 0.5);
       // water spray
       const n = 60; const geom = new THREE.BufferGeometry(); const pos = new Float32Array(n * 3); geom.setAttribute('position', new THREE.BufferAttribute(pos, 3));
       const pts = new THREE.Points(geom, new THREE.PointsMaterial({ color: 0xcdeeff, size: 0.06, transparent: true, opacity: 0.8, depthWrite: false }));
       g.add(pts);
       const seeds = Array.from({ length: n }, (_, i) => ({ a: (i / n) * Math.PI * 2, t: Math.random() }));
+      const spread = 0.4 * fr / 1.5 + 0.2;
       this.updaters.push((dt) => {
         seeds.forEach((s, i) => {
           s.t = (s.t + dt * 0.7) % 1;
-          const r = s.t * 0.6, y = 1.9 + s.t * 0.9 - s.t * s.t * 1.6;
-          pos[i * 3] = 3.8 + Math.cos(s.a) * r; pos[i * 3 + 1] = y; pos[i * 3 + 2] = 17.9 + Math.sin(s.a) * r;
+          const r = s.t * spread, y = 1.9 + s.t * 0.9 - s.t * s.t * 1.6;
+          pos[i * 3] = fx + Math.cos(s.a) * r; pos[i * 3 + 1] = y; pos[i * 3 + 2] = fz + Math.sin(s.a) * r;
         });
         geom.attributes.position.needsUpdate = true;
       });
     }
+    return g;
+  }
+
+  buildDishReturn() {
+    const g = new THREE.Group(); this.root.add(g);
+    const D = LOUNGE.dishReturn; const k = this.kit();
+    k.frame(D.x * U, 0, D.y * U, Math.PI, () => P.dishReturn(k));
+    k.build(g, { shadows: this.tier.shadows });
+    this.col(D.x - 48, D.y - 32, D.x + 48, D.y + 32);
+    this.pool(D.x * U, D.y * U + 0.6, 0.8, 0x8ac8ff, 0.4);
+    this.shadow(D.x * U, D.y * U, 0.55, 0.4);
     return g;
   }
 

@@ -1,6 +1,23 @@
 // Save data for the whole game: one shared wallet plus a record per branch.
 import { Store } from './platform.js';
-import { BRANCHES, BRANCH_ORDER, FAME, LOUNGE_AMBIENCE } from './config.js';
+import { BRANCHES, BRANCH_ORDER, FAME, LOUNGE_AMBIENCE, PROJECTS, HONOURS } from './config.js';
+
+// ---------- "Give back to Aba" projects: shared bonuses for every branch ----------
+let projectLevels = {};
+export function setProjectLevels(p) { projectLevels = p || {}; }
+/** total bonus of one kind ('demand', 'patience', 'away', 'staff', 'price', 'cap') from all projects */
+export function projectBonus(kind) {
+  let n = 0;
+  for (const pr of PROJECTS) if (pr.kind === kind) n += pr.per * (projectLevels[pr.id] || 0);
+  return n;
+}
+export function projectCost(pr, lvl) { return Math.round(pr.base * Math.pow(pr.mult, lvl)); }
+export function honour(levels = projectLevels) {
+  const total = Object.values(levels).reduce((a, b) => a + (b || 0), 0);
+  let t = '';
+  for (const [n, name] of HONOURS) if (total >= n) t = name;
+  return { title: t, total };
+}
 
 export function freshBranch(key) {
   const b = {
@@ -25,6 +42,7 @@ export function freshState() {
     branches: { stand: freshBranch('stand') },
     settings: { sfx: true, music: true, haptic: true },
     stats: { served: 0, earned: 0, buses: 0, start: Date.now() },
+    projects: {},
     t: Date.now(),
   };
 }
@@ -70,6 +88,8 @@ export function loadState() {
     };
   }
   if (!s.owned[s.branch]) s.branch = 'stand';
+  s.projects = { ...(s.projects || {}) };
+  setProjectLevels(s.projects);
   return { state: s, isNew: false };
 }
 
@@ -88,7 +108,7 @@ export function priceMult(key, b) {
   if (key === 'stand' && b.unlocked.sign) m *= 1.25;
   if (key === 'buka' && b.unlocked.generator) m *= 1.2;
   if (key === 'lounge') m *= 1 + ambience(b);
-  return m;
+  return m * (1 + projectBonus('price'));
 }
 
 /** GRA Lounge: decor bonus on prices */
@@ -102,11 +122,11 @@ export function passiveRate(key, b) {
   const auto = automation(key, b);
   if (auto <= 0) return 0;
   const producers = Object.keys(b.prod || {}).length || 1;
-  return BRANCHES[key].baseRate * auto * priceMult(key, b) * Math.min(2, 0.7 + 0.15 * producers) * Math.sqrt(FAME.demand(b.fame.lvl));
+  return BRANCHES[key].baseRate * auto * (1 + projectBonus('away')) * priceMult(key, b) * Math.min(2, 0.7 + 0.15 * producers) * Math.sqrt(FAME.demand(b.fame.lvl));
 }
 
 export function cashCap(key, b) {
-  return Math.round(BRANCHES[key].capBase * Math.pow(1.7, b.up.safe || 0) * (1 + 0.1 * (b.fame.lvl - 1)));
+  return Math.round(BRANCHES[key].capBase * Math.pow(1.7, b.up.safe || 0) * (1 + 0.1 * (b.fame.lvl - 1)) * (1 + projectBonus('cap')));
 }
 
 /** Money waiting at a branch you're not standing in. */

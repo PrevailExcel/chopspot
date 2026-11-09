@@ -5,3 +5,4 @@ export { Zone3D, Pad3D, Pile3D, CashPile3D, Bubble3D, iconTexture, textSprite, s
 export { Player3D, Walker, Guest, Worker, itemName } from './actors.js';
 export { ownerLook, randomLook, staffLook } from './person.js';
 export { PAL } from './props.js';
+export { escapePoint } from './nav.js';

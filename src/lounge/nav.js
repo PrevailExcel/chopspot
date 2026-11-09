@@ -93,6 +93,43 @@ export class NavGrid {
   }
 }
 
+/**
+ * Somewhere the player can actually walk from. Floods outwards from `seed` (the gate path) over a grid
+ * where every obstacle is grown by the walker's radius, so 1-cell slivers between furniture do not count.
+ * Returns null if `from` is already connected to `seed`, else the nearest connected point to `from`.
+ */
+export function escapePoint(colliders, bounds, seed, from, rad = 22, cell = 10) {
+  const g = new NavGrid({ cell });
+  g.block(colliders, rad);
+  const F = 1e5;
+  g.block([
+    { x1: -F, y1: -F, x2: bounds.x1 + rad - 1, y2: F }, { x1: bounds.x2 - rad + 1, y1: -F, x2: F, y2: F },
+    { x1: -F, y1: -F, x2: F, y2: bounds.y1 + rad - 1 }, { x1: -F, y1: bounds.y2 - rad + 1, x2: F, y2: F },
+  ], 0);
+  const [sx, sy] = g.nearestFree(...g.toCell(seed.x, seed.y));
+  const seen = new Uint8Array(g.w * g.h);
+  const q = [g.idx(sx, sy)]; seen[q[0]] = 1;
+  const [fx, fy] = g.toCell(from.x, from.y);
+  const target = g.inside(fx, fy) ? g.idx(fx, fy) : -1;
+  let best = -1, bd = Infinity;
+  for (let h = 0; h < q.length; h++) {
+    const i = q[h];
+    if (i === target) return null;
+    const cx = i % g.w, cy = (i / g.w) | 0;
+    const d = (cx - fx) * (cx - fx) + (cy - fy) * (cy - fy);
+    if (d < bd) { bd = d; best = i; }
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = cx + dx, ny = cy + dy;
+      if (g.isBlocked(nx, ny)) continue;
+      const ni = g.idx(nx, ny);
+      if (!seen[ni]) { seen[ni] = 1; q.push(ni); }
+    }
+  }
+  // standing flush against a wall puts you a hair inside the grown obstacles: that is not stuck
+  if (best < 0 || bd <= 6.25) return null;
+  return { x: g.x0 + ((best % g.w) + 0.5) * g.cell, y: g.y0 + (((best / g.w) | 0) + 0.5) * g.cell };
+}
+
 class MinHeap {
   constructor() { this.k = []; this.v = []; }
   get size() { return this.k.length; }

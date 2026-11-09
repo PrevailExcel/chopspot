@@ -6,6 +6,8 @@ import { Haptic } from '../platform.js';
 import { Rig } from '../entities/Rig.js';
 import { SKIN_TONES, OUTFITS, HAIR, defaultProfile, lookFromProfile } from '../profile.js';
 import { Install, INSTALL_BONUS } from '../install.js';
+import { PROJECTS, PROJECTS_SHOW_CASH } from '../config.js';
+import { projectCost, projectBonus, honour } from '../state.js';
 
 const JOY_R = 58;
 let titleDone = false; // the title screen shows once per app launch, not on every branch trip
@@ -49,6 +51,7 @@ export default class UIScene extends Phaser.Scene {
     on('open-upgrades', this.openUpgrades);
     on('close-upgrades', this.closeUpgrades);
     on('upgrades-changed', () => this.upPanel && this.fillUpgrades());
+    on('projects-changed', () => { if (this.modal && this.modal.kind === 'projects') this.showProjects(); });
     on('finished', this.showFinished);
     on('welcome-back', this.showWelcome);
     on('moved', () => this.hideMoveHint());
@@ -69,6 +72,7 @@ export default class UIScene extends Phaser.Scene {
 
     this.scale.on('resize', this.layout, this);
     this.events.once('shutdown', () => this.scale.off('resize', this.layout, this));
+    this.hudReady = true;
     this.layout();
     this.onHint(null, this.registry.get('hint') || '');
     this.onFame(null, this.registry.get('fame'));
@@ -96,7 +100,8 @@ export default class UIScene extends Phaser.Scene {
     this.gearBtn.setPosition(W - 32, top + 24);
     this.goalsBtn.setPosition(36, top + 82);
     this.mapBtn.setPosition(36, top + 136);
-    this.installBtn.setPosition(36, top + 190);
+    this.projBtn.setPosition(36, top + 190);
+    this.installBtn.setPosition(36, top + (this.projBtn.visible ? 244 : 190));
     this.camBtn.setPosition(this.W - 32, top + 82);
     this.eyeBtn.setPosition(this.W - 32, top + 136);
     this.hintC.setPosition(W / 2, top + 76);
@@ -131,11 +136,13 @@ export default class UIScene extends Phaser.Scene {
     this.goalsBtn = this.makeRoundButton('icon_goals', () => this.showGoals());
     this.mapBtn = this.makeRoundButton('icon_map', () => this.showMap());
     this.installBtn = this.makeRoundButton('install', () => this.showInstall('button'));
+    this.projBtn = this.makeRoundButton('projects', () => this.showProjects());
     this.camBtn = this.makeRoundButton('camera', () => this.game.events.emit('camera-toggle'));
     this.camBtn.setVisible(this.registry.get('active') === 'lounge');
     this.eyeBtn = this.makeRoundButton('eye', () => this.game.events.emit('explore-toggle'));
     this.eyeBtn.setVisible(this.registry.get('active') === 'lounge');
-    [this.gearBtn, this.goalsBtn, this.mapBtn, this.installBtn, this.camBtn, this.eyeBtn].forEach((b) => b.setDepth(100));
+    [this.gearBtn, this.goalsBtn, this.mapBtn, this.installBtn, this.projBtn, this.camBtn, this.eyeBtn].forEach((b) => b.setDepth(100));
+    this.refreshProjBtn();
     // "+N1k" tag under the install button
     const tag = this.add.container(0, 22);
     const tg = this.add.graphics(); tg.fillStyle(0x2bb34a, 1); tg.fillRoundedRect(-22, -8, 44, 16, 8); tg.lineStyle(1.5, 0xffffff, 1); tg.strokeRoundedRect(-22, -8, 44, 16, 8);
@@ -174,6 +181,16 @@ export default class UIScene extends Phaser.Scene {
       cg.fillStyle(0xffffff, 1); cg.fillRoundedRect(-11, -7, 22, 15, 4); cg.fillRect(-5, -10, 9, 4);
       cg.fillStyle(0x2a3550, 1); cg.fillCircle(0, 0.5, 5.2); cg.fillStyle(0xffd23f, 1); cg.fillCircle(0, 0.5, 2.8);
       c.add(cg);
+    } else if (kind === 'projects') {
+      // a small town hall: pediment, columns, steps
+      const hg = this.add.graphics();
+      hg.fillStyle(0xffffff, 1);
+      hg.fillTriangle(-13, -5, 13, -5, 0, -13);
+      hg.fillRect(-12, -4, 24, 2.5);
+      for (const x of [-10, -4, 2, 8]) hg.fillRect(x, -1, 2.6, 10);
+      hg.fillRect(-13, 9, 26, 2.5); hg.fillRect(-15, 12, 30, 2.2);
+      hg.fillStyle(0xffd23f, 1); hg.fillCircle(0, -8.2, 1.8);
+      c.add(hg);
     } else if (kind === 'install') {
       const pg = this.add.graphics();
       pg.lineStyle(2.5, 0xffffff, 1); pg.strokeRoundedRect(-7.5, -12, 15, 24, 3.5);
@@ -190,6 +207,14 @@ export default class UIScene extends Phaser.Scene {
     return c;
   }
 
+  refreshProjBtn() {
+    if (!this.projBtn) return;
+    const gs = this.gameScene.gs;
+    const any = Object.values(gs.projects || {}).some((n) => n > 0);
+    const show = any || !!gs.owned.buka || gs.cash >= PROJECTS_SHOW_CASH;
+    if (show !== this.projBtn.visible) { this.projBtn.setVisible(show); if (this.hudReady) this.layout(); }
+  }
+
   drawCashPill() {
     const w = Math.max(120, this.cashText.width + 76);
     if (w !== this.cashW) { this.cashW = w; if (this.cashPill) this.cashPill.x = 14 + w / 2; }
@@ -202,6 +227,9 @@ export default class UIScene extends Phaser.Scene {
   }
 
   onCash(_p, v) {
+    if (this.projBtn && !this.projBtn.visible) this.refreshProjBtn();
+    // redraw the projects panel only when a button turns green or grey
+    if (this.modal && this.modal.kind === 'projects' && this.modal.canKey !== this.projCanKey(v)) this.showProjects();
     if (v > this.shownCash + 0.5) this.tweens.add({ targets: this.cashPill, scale: 1.08, duration: 70, yoyo: true });
     this.targetCash = v;
     if (this.modal && this.modal.kind === 'map' && !this.modal.refreshing) {
@@ -594,6 +622,63 @@ export default class UIScene extends Phaser.Scene {
     this.reopening = false;
   }
 
+  // ---------- give back to Aba ----------
+  showProjects() {
+    const gs = this.gameScene.gs; const cash = gs.cash; const P = gs.projects || {};
+    const reopen = this.modal && this.modal.kind === 'projects';
+    this.reopening = reopen;
+    const m = this.openModal((card) => {
+      const w = Math.min(380, this.W - 20);
+      const rowH = Math.max(66, Math.min(84, Math.floor((this.H - 200) / PROJECTS.length)));
+      const h = 128 + PROJECTS.length * rowH + 16;
+      this.card(card, w, h, 'Give back to Aba', 0x2f7d4c);
+      this.closeX(card, w, h);
+      const hon = honour(P);
+      const given = gs.stats.given || 0;
+      card.add(this.txt(0, -h / 2 + 74, hon.title ? `Aba calls you: ${hon.title}` : 'Build up your city. Every project helps all your branches.', 13, 700, '#2f7d4c', { align: 'center', wordWrap: { width: w - 40 } }).setOrigin(0.5));
+      card.add(this.txt(0, -h / 2 + 96, given > 0 ? `You have given ${money(given)} to the city` : 'Each level costs double the last, so there is always more to build.', 11.5, 500, '#7a6450', { align: 'center', wordWrap: { width: w - 40 } }).setOrigin(0.5));
+      PROJECTS.forEach((pr, i) => {
+        const y = -h / 2 + 118 + i * rowH + rowH / 2;
+        const lvl = P[pr.id] || 0; const maxed = lvl >= pr.max;
+        const cost = projectCost(pr, lvl); const can = !maxed && cash >= cost;
+        const bg = this.add.graphics();
+        bg.fillStyle(i % 2 ? 0xffffff : 0xf1f8ee, 1); bg.fillRoundedRect(-w / 2 + 10, y - rowH / 2 + 3, w - 20, rowH - 6, 14);
+        card.add(bg);
+        card.add(img(this, -w / 2 + 38, y, pr.icon).setScale(0.5 * 0.62));
+        const tx = -w / 2 + 68; const tw = w - 68 - 120;
+        card.add(this.txt(tx, y - rowH / 2 + 10, pr.name, 14, 700, '#3a2a1a', { wordWrap: { width: tw } }));
+        const now = `+${Math.round(projectBonus(pr.kind) * 100)}%`;
+        card.add(this.txt(tx, y + 2, pr.desc, 11, 500, '#7a6450', { wordWrap: { width: tw } }));
+        const bar = this.add.graphics(); const bw0 = Math.min(110, tw);
+        bar.fillStyle(0xe2d5bb, 1); bar.fillRoundedRect(tx, y + rowH / 2 - 14, bw0, 5, 2.5);
+        if (lvl) { bar.fillStyle(0x2bb34a, 1); bar.fillRoundedRect(tx, y + rowH / 2 - 14, Math.max(5, bw0 * lvl / pr.max), 5, 2.5); }
+        card.add(bar);
+        card.add(this.txt(tx + bw0 + 6, y + rowH / 2 - 18, `Lv ${lvl}/${pr.max}${lvl ? '  ·  ' + now : ''}`, 10.5, 600, '#2f7d4c'));
+        const bw = 100, bh = 40, bx = w / 2 - 18 - bw / 2;
+        const btn = this.add.container(bx, y);
+        const bgb = this.add.graphics();
+        const col = maxed ? 0x9aa3ad : can ? 0x2bb34a : 0xc9b99c;
+        bgb.fillStyle(0x000000, 0.18); bgb.fillRoundedRect(-bw / 2, -bh / 2 + 3, bw, bh, 12);
+        bgb.fillStyle(col, 1); bgb.fillRoundedRect(-bw / 2, -bh / 2, bw, bh, 12);
+        btn.add([bgb, label(this, 0, 0, maxed ? 'DONE' : money(cost), { size: cost >= 1e8 ? 13 : 15, stroke: null, res: this.dpr * 1.5 })]);
+        btn.setSize(bw, bh).setInteractive({ useHandCursor: true });
+        btn.on('pointerdown', () => {
+          if (maxed) return;
+          if (!can) { Sound.play('deny'); this.tweens.add({ targets: btn, x: bx + 6, duration: 50, yoyo: true, repeat: 2 }); return; }
+          this.tweens.add({ targets: btn, scale: 0.9, duration: 70, yoyo: true });
+          this.game.events.emit('buy-project', pr.id);
+        });
+        card.add(btn);
+      });
+    }, 'projects');
+    m.canKey = this.projCanKey(cash);
+    this.reopening = false;
+  }
+  projCanKey(cash) {
+    const P = this.gameScene.gs.projects || {};
+    return PROJECTS.map((pr) => (cash >= projectCost(pr, P[pr.id] || 0) ? 1 : 0)).join('');
+  }
+
   // ---------- title ----------
   showTitle() {
     this.titleOpen = true;
@@ -753,7 +838,7 @@ export default class UIScene extends Phaser.Scene {
       this.card(card, w, h, 'How to play here', 0x1d4537);
       const rows = [
         ['walk', 'Walk', 'Drag anywhere to walk, or just tap where you want to go.'],
-        ['ring', 'Use things', 'Step into a glowing ring to seat guests, pick up dishes and serve. Clear plates and wash them at the kitchen sink. Follow the arrow.'],
+        ['ring', 'Use things', 'Step into a glowing ring to pick up and serve dishes. Guests seat themselves. Take dirty plates to the dish return by the kitchen door.'],
         ['look', 'Look around', 'Pinch to zoom. Twist two fingers to turn. Tap the eye button to explore the whole place.'],
       ];
       rows.forEach(([kind, title, body], i) => {

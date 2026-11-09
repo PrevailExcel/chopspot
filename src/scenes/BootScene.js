@@ -15,6 +15,6 @@ export default class BootScene extends Phaser.Scene {
     const boot = document.getElementById('boot');
     if (boot) { boot.style.opacity = '0'; setTimeout(() => boot.remove(), 350); }
     const key = state.branch || 'stand';
-    prepareBranch(key).then(() => this.scene.start(key)).catch(() => { state.branch = 'stand'; this.scene.start('stand'); });
+    prepareBranch(key).then(() => this.scene.start(key)).catch((e) => { console.warn('Could not open', key, e); state.branch = 'stand'; this.scene.start('stand'); });
   }
 }

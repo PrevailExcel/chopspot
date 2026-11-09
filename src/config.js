@@ -224,11 +224,19 @@ export const LOUNGE = {
   sink: { x: 1265, y: 235, zone: { x: 1305, y: 345, r: 56 } },
   rack: { x: 1385, y: 380 },
   kitchenDoor: { x: 1320, y: 572 },
-  plates: { base: 36, perUpgrade: 6, wash: 0.34, staffWash: 0.75 },
+  // dish return trolley just outside the kitchen door: drop dirty plates here instead of walking to the sink
+  dishReturn: { x: 1385, y: 650, zone: { x: 1385, y: 735, r: 58 } },
+  // porter: the kitchen washes plates slowly on its own (seconds per plate), so you never HAVE to wash
+  plates: { base: 48, perUpgrade: 6, wash: 0.34, staffWash: 0.75, porter: 1.1 },
+  // guests who wait this long at the door seat themselves at a free table (the host stand is now a shortcut)
+  selfSeat: 5,
   queue: [{ x: 1000, y: 1690 }, { x: 1000, y: 1775 }, { x: 1000, y: 1860 }, { x: 1000, y: 1950 }, { x: 1000, y: 2040 }],
   eventTable: { x: 1690, y: 1270 },
-  stage: { x: 300, y: 800 },
-  guests: { spawnEvery: 13, speed: 120, read: [2.5, 4], eat: [9, 13], patience: 70, queuePatience: 45, tip: [0.08, 0.2] },
+  // the band stand sits clear of the kitchen pass, so the grill and pasta chefs stay in view and reachable
+  stage: { x: 280, y: 875, w: 300, d: 210 },
+  // front garden: a 1 m basin leaves a walkway between the facade (y 1612) and the compound wall (y 1950)
+  fountain: { x: 380, y: 1780, r: 100 },
+  guests: { spawnEvery: 13, speed: 120, read: [2.5, 4], eat: [9, 13], patience: 95, queuePatience: 60, tip: [0.08, 0.2] },
   booking: {
     label: 'A birthday party', bayText: 'Serve the party at the event table',
     firstDelay: 20, cooldown: [55, 85], bonus: 1.8, wait: 70, waitPerItem: 4,
@@ -253,7 +261,7 @@ export const LOUNGE_UNLOCKS = [
   { id: 'pizza', name: 'Pizza Oven', cost: 15000, x: 920, y: 690, icon: 'icon_pizza' },
   { id: 'machine', name: 'Dishwasher', sub: 'Plates wash 2x faster', cost: 16000, x: 1430, y: 840, icon: 'icon_machine' },
   { id: 'waiter2', name: 'Hire Adaeze', sub: 'Waiter', cost: 17000, x: 1000, y: 940, icon: 'icon_lwaiter' },
-  { id: 'band', name: 'Live Band', sub: 'More guests, +8% prices', cost: 20000, x: 300, y: 810, icon: 'icon_band' },
+  { id: 'band', name: 'Live Band', sub: 'More guests, +8% prices', cost: 20000, x: 280, y: 875, icon: 'icon_band' },
   { id: 't6', name: 'Table for Two', cost: 22000, x: 1210, y: 1320, icon: 'icon_ltable' },
   { id: 'b2', name: 'Velvet Booth 2', cost: 25000, x: 270, y: 1400, icon: 'icon_booth' },
   { id: 'events', name: 'Event Table', sub: 'Birthday & dinner bookings', cost: 28000, x: 1690, y: 1270, icon: 'icon_party' },
@@ -261,7 +269,7 @@ export const LOUNGE_UNLOCKS = [
   { id: 'art', name: 'Gallery Wall', sub: 'Guests pay 6% more', cost: 36000, x: 440, y: 1500, icon: 'icon_art' },
   { id: 'manager', name: 'Hire Mrs. Eze', sub: 'Manager', cost: 40000, x: 600, y: 1500, icon: 'icon_lmanager' },
   { id: 'terrace', name: 'Garden Terrace', sub: '2 outdoor tables', cost: 48000, x: 700, y: 1770, icon: 'icon_terrace' },
-  { id: 'fountain', name: 'Fountain & Lights', sub: 'The finest spot in Aba', cost: 60000, x: 380, y: 1790, icon: 'icon_fountain' },
+  { id: 'fountain', name: 'Fountain & Lights', sub: 'The finest spot in Aba', cost: 60000, x: 380, y: 1780, icon: 'icon_fountain' },
 ];
 
 export const LOUNGE_UPGRADES = [
@@ -276,6 +284,22 @@ export const LOUNGE_UPGRADES = [
 ];
 // decor that lifts prices ("ambience")
 export const LOUNGE_AMBIENCE = { chandelier: 0.06, band: 0.08, art: 0.06, fountain: 0.1, terrace: 0.04 };
+
+// ---------- "Give back to Aba": community projects ----------
+// The money sink for rich players. Each level is a real gift to the city and gives a small
+// permanent bonus to EVERY branch. Costs double each level, so there is always a next project.
+export const PROJECTS = [
+  { id: 'road', name: 'Fix Faulks Road', desc: '+5% customers at every branch', icon: 'icon_proj_road', base: 25000, mult: 2, max: 15, per: 0.05, kind: 'demand' },
+  { id: 'water', name: 'Community Borehole', desc: 'Customers wait 5% longer everywhere', icon: 'icon_proj_water', base: 40000, mult: 2, max: 15, per: 0.05, kind: 'patience' },
+  { id: 'solar', name: 'Solar for Ariaria Market', desc: '+10% earnings while you\'re away', icon: 'icon_proj_solar', base: 60000, mult: 2, max: 15, per: 0.1, kind: 'away' },
+  { id: 'school', name: 'Scholarship Fund', desc: 'Staff 5% faster everywhere', icon: 'icon_proj_school', base: 80000, mult: 2, max: 15, per: 0.05, kind: 'staff' },
+  { id: 'league', name: 'Sponsor the Youth League', desc: 'Prices +4% everywhere (fame)', icon: 'icon_proj_league', base: 120000, mult: 2, max: 15, per: 0.04, kind: 'price' },
+  { id: 'traders', name: 'Loans for Small Traders', desc: 'Cash boxes hold 25% more', icon: 'icon_proj_traders', base: 150000, mult: 2, max: 15, per: 0.25, kind: 'cap' },
+];
+/** what the city calls you, by total project levels */
+export const HONOURS = [[0, ''], [1, 'Good Neighbour'], [6, 'Community Builder'], [16, 'Pride of Aba'], [36, 'Enyimba City Legend'], [70, 'Father of the City']];
+// projects appear once the player owns the Buka or has this much cash
+export const PROJECTS_SHOW_CASH = 20000;
 
 // Branch directory: name, how it is opened, how it earns while you're elsewhere.
 export const BRANCHES = {

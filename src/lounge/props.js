@@ -541,14 +541,16 @@ export function fenceWall(k, x1, x2, z, h = 2.1) {
   for (let x = x1 + 0.1; x < x2; x += 3) k.box(0.4, h + 0.25, 0.4, [x, (h + 0.25) / 2, z], '#d6cebd', 'matte');
 }
 
-export function fountain(k, x, z) {
-  k.cyl(1.5, 0.45, [x, 0.225, z], '#d9d2c3', 'satin', 36);
-  k.cyl(1.38, 0.05, [x, 0.42, z], '#3f8fb8', 'gloss', 36);
-  k.cyl(0.25, 1.1, [x, 0.8, z], '#d9d2c3', 'satin', 16);
-  k.cyl(0.65, 0.12, [x, 1.36, z], '#d9d2c3', 'satin', 24);
-  k.cyl(0.55, 0.03, [x, 1.43, z], '#5ab0d8', 'gloss', 24);
-  k.cyl(0.08, 0.5, [x, 1.65, z], '#d9d2c3', 'satin', 10);
-  k.cyl(1.4, 0.02, [x, 0.45, z], '#7fd6ff', 'night', 36);
+export function fountain(k, x, z, r = 1.5) {
+  // r is the basin radius in metres; everything else scales with it
+  const f = r / 1.5;
+  k.cyl(r, 0.45, [x, 0.225, z], '#d9d2c3', 'satin', 36);
+  k.cyl(r - 0.12 * f, 0.05, [x, 0.42, z], '#3f8fb8', 'gloss', 36);
+  k.cyl(0.25 * f, 1.1, [x, 0.8, z], '#d9d2c3', 'satin', 16);
+  k.cyl(0.65 * f, 0.12, [x, 1.36, z], '#d9d2c3', 'satin', 24);
+  k.cyl(0.55 * f, 0.03, [x, 1.43, z], '#5ab0d8', 'gloss', 24);
+  k.cyl(0.08 * f, 0.5, [x, 1.65, z], '#d9d2c3', 'satin', 10);
+  k.cyl(r - 0.1 * f, 0.02, [x, 0.45, z], '#7fd6ff', 'night', 36);
 }
 
 export function canopy(k, x, z, w) {
