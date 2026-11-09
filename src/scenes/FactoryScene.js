@@ -291,7 +291,7 @@ export default class FactoryScene extends BranchScene {
       { kind: 'item:shirts', text: (n) => `Sell ${n} bales of shirts`, target: (t) => 8 + 4 * t, ok: has('shirts') },
       { kind: 'item:bags', text: (n) => `Sell ${n} cartons of handbags`, target: (t) => 6 + 3 * t, ok: has('bags') },
       { kind: 'vehicle', text: (n) => `Fill ${n} truck order${n > 1 ? 's' : ''}`, target: (t) => 1 + Math.floor(t / 2), ok: has('bay1'), weight: 1.4 },
-      { kind: 'streak', text: (n) => `Serve ${n} traders in a row with no walkouts`, target: (t) => 6 + 2 * t, weight: 1.3, ok: this.b.fame.lvl >= 3 },
+      { kind: 'streak', text: (n) => `Serve ${n} traders in a row, no walkouts`, target: (t) => 6 + 2 * t, weight: 1.3, ok: this.b.fame.lvl >= 3 },
       { kind: 'rush', text: (n) => `Serve ${n} traders during a rush hour`, target: (t) => 4 + 2 * t, ok: this.unlockCount() >= 3, weight: 1.3 },
     ];
   }
@@ -339,7 +339,7 @@ export default class FactoryScene extends BranchScene {
   onVehicleTimeout(v, frac) {
     const part = Math.round(this.truckReward(v) * frac * 0.8);
     if (part > 0) v.cashPile.deposit(part, { x: v.im.x, y: v.im.y - 60 });
-    this.floatText(v.im.x, v.im.y - 200, part > 0 ? `Had to go. +${money(part)}` : 'The truck had to go', '#ffe9c8', 22);
+    this.floatText(v.im.x, v.im.y - 200, part > 0 ? `Truck left. +${money(part)}` : 'Truck left', '#ffe9c8', 22);
     Sound.play('deny');
     this.b.vehicleIntro = true;
   }
@@ -460,7 +460,7 @@ export default class FactoryScene extends BranchScene {
         P.left = C.length; P.gen = false; P.cuts++;
         this.genZone.setVisible(true);
         Sound.play('deny');
-        this.game.events.emit('toast', this.staff.electrician ? 'NEPA took light. Sunday is starting the generator' : 'NEPA took light! Lines are slow. Start the generator');
+        this.game.events.emit('toast', this.staff.electrician ? 'NEPA took light. Sunday is on it' : 'NEPA took light! Start the generator');
       }
     }
     const want = this.powerOut ? 0.2 : 0;
@@ -648,21 +648,21 @@ export default class FactoryScene extends BranchScene {
     const zc = (z) => ({ x: z.cx, y: z.cy });
     if (b.tut === 0) {
       if (p.countOf('oil') > 0) b.tut = 1;
-      else return { target: zc(oil.zone), text: 'Welcome to your factory! Grab kegs of palm oil from the press' };
+      else return { target: zc(oil.zone), text: 'Welcome! Grab palm oil from the press' };
     }
-    if (b.tut === 1) return { target: zc(this.dropZone), text: 'Stock the shop counter. Traders buy wholesale here' };
+    if (b.tut === 1) return { target: zc(this.dropZone), text: 'Stock the shop counter' };
     if (b.tut === 2) {
       const front = this.queue[0];
       if (front && !front.complete && this.shelves.oil.count === 0) return { target: p.countOf('oil') ? zc(this.dropZone) : zc(oil.zone), text: 'Your trader wants more palm oil' };
-      return { text: 'Traders pay right at the counter. No till to wait at' };
+      return { text: 'Your trader is buying…' };
     }
-    if (b.tut === 3) return { target: { x: this.tillCash.x, y: this.tillCash.y }, text: 'Pick up your money! Walk near it' };
+    if (b.tut === 3) return { target: { x: this.tillCash.x, y: this.tillCash.y }, text: 'Pick up your money' };
     return this.freeGoal();
   }
 
   branchFreeGoal() {
     const p = this.player;
-    if (this.power.left > 0 && !this.power.gen && !this.staff.electrician) return { target: { x: this.genZone.cx, y: this.genZone.cy, r: 50 }, text: 'NEPA took light. Start the generator (or wait it out)' };
+    if (this.power.left > 0 && !this.power.gen && !this.staff.electrician) return { target: { x: this.genZone.cx, y: this.genZone.cy, r: 50 }, text: 'NEPA took light. Start the generator' };
     // trucks come first: they pay best
     const waiting = this.trucks.filter((v) => v.waiting).sort((a, c) => a.waitLeft - c.waitLeft);
     for (const v of waiting) {
@@ -673,18 +673,18 @@ export default class FactoryScene extends BranchScene {
       const k = v.types.find((t) => v.needs(t) > 0);
       if (!k) continue;
       const n = v.needs(k);
-      if (this.rack[k].count > 0) return { target: { x: this.rackZone.cx, y: this.rackZone.cy, r: 60 }, text: `${v.buyer} wants ${n} ${many(k, n)}. Grab them at the dispatch rack` };
+      if (this.rack[k].count > 0) return { target: { x: this.rackZone.cx, y: this.rackZone.cy, r: 60 }, text: `${v.buyer} wants ${n} ${many(k, n)}` };
       const src = this.producersOf(k).sort((a, c) => c.count - a.count)[0];
-      if (src) return { target: { x: src.zone.cx, y: src.zone.cy, r: 50 }, text: `${v.buyer} wants ${n} ${many(k, n)}. Pick them up at the line` };
+      if (src) return { target: { x: src.zone.cx, y: src.zone.cy, r: 50 }, text: `${v.buyer} wants ${n} ${many(k, n)}` };
     }
     const front = this.queue[0];
     if (front && front.state === 'ordering') {
       const k = front.types.find((t) => front.needs(t) > 0 && this.shelves[t].count === 0);
       if (k) {
-        if (p.countOf(k) > 0) return { target: { x: this.dropZone.cx, y: this.dropZone.cy }, text: `A trader wants ${one(k)}. Stock the counter` };
+        if (p.countOf(k) > 0) return { target: { x: this.dropZone.cx, y: this.dropZone.cy }, text: `A trader wants ${one(k)}` };
         const atRack = this.rack[k].count > 0;
         const src = atRack ? { x: this.rackZone.cx, y: this.rackZone.cy } : (() => { const pr = this.producersOf(k).sort((a, c) => c.count - a.count)[0]; return pr ? { x: pr.zone.cx, y: pr.zone.cy } : null; })();
-        return { target: src, text: `A trader wants ${ITEMS[k].plural}. Grab some` };
+        return { target: src, text: `A trader wants ${ITEMS[k].plural}` };
       }
     }
     // nothing urgent: keep the counter stocked, so there is always a next step
@@ -703,9 +703,9 @@ export default class FactoryScene extends BranchScene {
     const v = this.trucks.find((x) => x.waiting);
     if (v && !this.b.vehicleIntro) {
       const t = { x: v.zone.cx, y: v.zone.cy };
-      if (v.types.some((k) => v.needs(k) > 0 && this.player.countOf(k) > 0)) return { target: t, text: 'Walk into the yellow bay to load the pickup' };
+      if (v.types.some((k) => v.needs(k) > 0 && this.player.countOf(k) > 0)) return { target: t, text: 'Load it in the yellow bay' };
       const g = this.branchFreeGoal();
-      if (g) return { ...g, text: `A pickup from ${v.buyer} is here! ${g.text.replace(`${v.buyer} wants`, 'It wants')}` };
+      if (g) return { ...g, text: g.text.replace(`${v.buyer} wants`, `Pickup from ${v.buyer} wants`) };
     }
     return super.freeGoal();
   }

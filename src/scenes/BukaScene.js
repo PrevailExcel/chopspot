@@ -255,7 +255,7 @@ export default class BukaScene extends BranchScene {
     const has = (id) => this.isUnlocked(id);
     const sells = (k) => this.producersOf(k).length > 0;
     return [
-      { kind: 'serve', text: (n) => `Serve ${n} tables of customers`, target: (t) => 6 + 3 * t },
+      { kind: 'serve', text: (n) => `Serve ${n} tables`, target: (t) => 6 + 3 * t },
       { kind: 'earn', text: (n) => `Collect ${money(n)}`, target: (t) => Math.round(600 * Math.pow(1.28, t) / 50) * 50, weight: 1.2 },
       { kind: 'item:jollof', text: (n) => `Sell ${n} plates of jollof rice`, target: (t) => 6 + 3 * t },
       { kind: 'item:noodles', text: (n) => `Sell ${n} bowls of noodles`, target: (t) => 6 + 3 * t, ok: sells('noodles') },
@@ -264,7 +264,7 @@ export default class BukaScene extends BranchScene {
       { kind: 'item:malt', text: (n) => `Sell ${n} bottles of malt`, target: (t) => 6 + 3 * t, ok: sells('malt') },
       { kind: 'clean', text: (n) => `Clear ${n} dirty tables`, target: (t) => 5 + 2 * t },
       { kind: 'vehicle', text: (n) => `Fill ${n} keke order${n > 1 ? 's' : ''}`, target: (t) => 1 + Math.floor(t / 3), ok: has('keke'), weight: 1.4 },
-      { kind: 'streak', text: (n) => `Serve ${n} customers in a row with no walkouts`, target: (t) => 5 + 2 * t, weight: 1.3 },
+      { kind: 'streak', text: (n) => `Serve ${n} in a row, no walkouts`, target: (t) => 5 + 2 * t, weight: 1.3 },
       { kind: 'rush', text: (n) => `Serve ${n} customers during a rush hour`, target: (t) => 3 + 2 * t, ok: this.unlockCount() >= 3, weight: 1.3 },
     ];
   }
@@ -479,10 +479,10 @@ export default class BukaScene extends BranchScene {
     const first = this.diners()[0];
     if (b.tut === 0) {
       if (p.countOf('jollof') > 0) b.tut = 1;
-      else return { target: zc(pot.zone), text: 'Welcome to your Buka! Grab a plate of jollof rice' };
+      else return { target: zc(pot.zone), text: 'Welcome! Grab a plate of jollof' };
     }
     if (b.tut === 1) {
-      if (first && first.state === 'seated') return { target: this.servicePoint(first.table), text: 'Carry it to the customer at their table' };
+      if (first && first.state === 'seated') return { target: this.servicePoint(first.table), text: 'Take it to the customer' };
       if (p.countOf('jollof') === 0) return { target: zc(pot.zone), text: 'Grab a plate of jollof rice' };
       return { text: 'Your customer is coming in...' };
     }
@@ -497,14 +497,14 @@ export default class BukaScene extends BranchScene {
 
   branchFreeGoal() {
     const p = this.player;
-    if (p.countOf('dirty') > 0 && p.carryCount >= this.carryCap()) return { target: { x: this.sinkZone.cx, y: this.sinkZone.cy }, text: 'Your tray is full of dirty plates. Wash them!' };
+    if (p.countOf('dirty') > 0 && p.carryCount >= this.carryCap()) return { target: { x: this.sinkZone.cx, y: this.sinkZone.cy }, text: 'Tray full. Wash the plates' };
     const dirty = this.tables.filter((t) => t.plates.count > 0);
-    if (this.waiting.length && dirty.length && !this.isUnlocked('cleaner')) return { target: this.servicePoint(dirty[0]), text: 'Customers are waiting outside. Clear a dirty table!' };
+    if (this.waiting.length && dirty.length && !this.isUnlocked('cleaner')) return { target: this.servicePoint(dirty[0]), text: 'Customers waiting. Clear a table' };
     const hungry = this.diners().filter((c) => c.state === 'seated' && !c.complete).sort((a, b) => (a.patience ?? 99) - (b.patience ?? 99))[0];
     if (hungry && (hungry.patience ?? 99) < hungry.patienceMax * 0.4) {
       const k = hungry.types.find((x) => hungry.needs(x) > 0);
-      if (p.countOf(k) > 0) return { target: this.servicePoint(hungry.table), text: `Hurry! A table is waiting for ${ITEMS[k].name.toLowerCase()}` };
-      return { text: `Hurry! A table is waiting for ${ITEMS[k].name.toLowerCase()}`, arrow: false };
+      if (p.countOf(k) > 0) return { target: this.servicePoint(hungry.table), text: `A table wants ${ITEMS[k].name.toLowerCase()}` };
+      return { text: `A table wants ${ITEMS[k].name.toLowerCase()}`, arrow: false };
     }
     return null;
   }

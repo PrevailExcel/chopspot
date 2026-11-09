@@ -257,7 +257,7 @@ export default class LoungeScene extends BranchScene {
     this.marker = new this.E.Zone3D(this.ctx, { x: 0, y: 0, r: 34 }, { color: 0xffffff, visible: false });
     if (!this.b.introDone) this.startIntro();
     else this.time.delayedCall(1500, () => this.maybeCoach());
-    if (DEMO) this.time.delayedCall(1200, () => this.game.events.emit('toast', 'Demo visit: progress here is not saved'));
+    if (DEMO) this.time.delayedCall(1200, () => this.game.events.emit('toast', 'Demo: progress is not saved'));
     if (this.b.tut === 0 && this.b.stats.served === 0) this.spawnParty({ size: 2, order: { steak: 2 }, instant: true });
     this.events.once('shutdown', () => this.teardown());
     this.registry.set('lounge', true);
@@ -280,7 +280,7 @@ export default class LoungeScene extends BranchScene {
   // the first arrival: a short camera sweep from the street to the door
   startIntro() {
     this.intro = { t: 0, dur: 5.2 };
-    this.game.events.emit('toast', 'Welcome to GRA. This is your new restaurant.');
+    this.game.events.emit('toast', 'Welcome to GRA');
   }
   updateIntro(dt) {
     const it = this.intro; const view = this.ctx.view;
@@ -339,7 +339,7 @@ export default class LoungeScene extends BranchScene {
       trackAd('tap', id, s.slotId);
       const url = ad.url || BOOKING_URL;
       if (url) { this.game.events.emit('toast', `Opening ${ad.url ? ad.label : 'ad booking'}…`); window.open(url, '_blank', 'noopener'); }
-      else this.game.events.emit('toast', 'Want your brand on this screen? Booking opens soon!');
+      else this.game.events.emit('toast', 'Ad booking opens soon');
     });
   }
 
@@ -358,7 +358,7 @@ export default class LoungeScene extends BranchScene {
     if (ui) { ui.blockJoy = on; Object.assign(ui.joy, { id: null, active: false, x: 0, y: 0 }); }
     this.autoPath = null; this.marker.setVisible(false);
     this.game.events.emit('explore-state', on);
-    if (on) this.game.events.emit('toast', 'Explore: drag to move around, pinch to zoom, twist to turn');
+    if (on) this.game.events.emit('toast', 'Drag to look around');
   }
 
   setupGestures() {
@@ -545,10 +545,10 @@ export default class LoungeScene extends BranchScene {
       { kind: 'item:dessert', text: (n) => `Serve ${n} slices of chocolate cake`, target: (t) => 5 + 3 * t, ok: sells('dessert') },
       { kind: 'item:drink', text: (n) => `Serve ${n} mocktails`, target: (t) => 8 + 4 * t, ok: sells('drink') },
       { kind: 'clean', text: (n) => `Clear ${n} tables`, target: (t) => 5 + 2 * t },
-      { kind: 'greet', text: (n) => `Greet ${n} table${n > 1 ? 's' : ''} that ask for the owner`, target: (t) => 2 + t, ok: !this.isUnlocked('manager') },
+      { kind: 'greet', text: (n) => `Greet ${n} table${n > 1 ? 's' : ''}`, target: (t) => 2 + t, ok: !this.isUnlocked('manager') },
       { kind: 'vip', text: (n) => `Serve ${n} VIP table${n > 1 ? 's' : ''}`, target: (t) => 1 + Math.floor(t / 2), ok: this.b.fame.lvl >= 3, weight: 1.5 },
       { kind: 'vehicle', text: (n) => `Host ${n} party booking${n > 1 ? 's' : ''}`, target: (t) => 1 + Math.floor(t / 3), ok: has('events'), weight: 1.5 },
-      { kind: 'streak', text: (n) => `Serve ${n} tables in a row with no walkouts`, target: (t) => 4 + 2 * t, weight: 1.3 },
+      { kind: 'streak', text: (n) => `Serve ${n} tables in a row, no walkouts`, target: (t) => 4 + 2 * t, weight: 1.3 },
       { kind: 'rush', text: (n) => `Serve ${n} tables during a rush hour`, target: (t) => 2 + t, ok: this.unlockCount() >= 3, weight: 1.3 },
     ];
   }
@@ -1001,7 +1001,7 @@ export default class LoungeScene extends BranchScene {
     const carrying = [this.player, ...this.helpers.map((h) => h.w).filter(Boolean)].some((w) => w.countOf && w.countOf('dirty') > 0);
     if (carrying) return;
     this.rackPile.add(8, true);
-    this.game.events.emit('toast', 'A crate of fresh plates was delivered');
+    this.game.events.emit('toast', 'Fresh plates delivered');
   }
 
   takeDirty(t, who) {
@@ -1084,26 +1084,26 @@ export default class LoungeScene extends BranchScene {
     const host = { x: LOUNGE.host.zone.x, y: LOUNGE.host.zone.y, r: 50 };
     const zc = (z) => ({ x: z.cx, y: z.cy });
     if (b.tut === 0) {
-      if (first && first.state === 'queued') return { target: host, text: 'Welcome to GRA! Guests are at the door. Stand at the host stand to seat them' };
-      return { text: 'Welcome to GRA! Your first guests are arriving…' };
+      if (first && first.state === 'queued') return { target: host, text: 'Guests are here. Seat them at the host stand' };
+      return { text: 'Your first guests are coming…' };
     }
     if (b.tut === 1) {
       if (p.countOf('steak') > 0) b.tut = 2;
-      else return { target: zc(this.producers.grill.zone), text: 'Grab grilled steaks from the kitchen pass' };
+      else return { target: zc(this.producers.grill.zone), text: 'Grab steaks from the kitchen' };
     }
     if (b.tut === 2) {
       const pt = first && first.table;
       if (first && first.state === 'ordered' && pt) return { target: { ...pt.service, r: 70 }, text: 'Serve the steaks to your guests' };
-      if (first && (first.state === 'reading' || first.state === 'toTable')) return { text: 'Your guests are looking at the menu…' };
-      if (p.countOf('steak') === 0) return { target: zc(this.producers.grill.zone), text: 'Grab grilled steaks from the kitchen pass' };
+      if (first && (first.state === 'reading' || first.state === 'toTable')) return { text: 'They are reading the menu…' };
+      if (p.countOf('steak') === 0) return { target: zc(this.producers.grill.zone), text: 'Grab steaks from the kitchen' };
     }
     if (b.tut === 3) {
       const t = this.tables.find((x) => !x.party && (x.plates.count > 0 || x.cash.value > 0));
-      if (t) return { target: { ...t.service, r: 70 }, text: 'Collect the bill and clear the plates' };
+      if (t) return { target: { ...t.service, r: 70 }, text: 'Collect the bill and clear up' };
       return { text: 'Let them enjoy their meal…' };
     }
     if (b.tut === 4) {
-      if (p.countOf('dirty') > 0) return { target: zc(this.returnZone), text: 'Drop the dirty plates at the dish return by the kitchen door' };
+      if (p.countOf('dirty') > 0) return { target: zc(this.returnZone), text: 'Drop the plates at the dish return' };
       this.finishTutorial();
     }
     return this.freeGoal();
@@ -1121,17 +1121,17 @@ export default class LoungeScene extends BranchScene {
     const p = this.player;
     const sinkT = { x: this.sinkZone.cx, y: this.sinkZone.cy, r: 50 };
     const retT = { x: this.returnZone.cx, y: this.returnZone.cy, r: 50 };
-    if (p.countOf('dirty') > 0 && p.carryCount >= this.carryCap()) return { target: retT, text: 'Your tray is full of plates. Drop them at the dish return by the kitchen door' };
+    if (p.countOf('dirty') > 0 && p.carryCount >= this.carryCap()) return { target: retT, text: 'Tray full. Drop plates at the dish return' };
     const ordered = this.parties.filter((q) => q.state === 'ordered' && q.table).sort((a, b) => a.patience - b.patience);
     for (const q of ordered) {
       const k = this.partyTypes(q).find((x) => this.partyNeeds(q, x) > 0 && p.countOf(x) > 0);
       if (k) return { target: { ...q.table.service, r: 70 }, text: `Serve ${this.tableName(q.table)}` };
     }
     const stalled = Object.values(this.producers).some((pr) => pr.noPlates);
-    if (stalled && p.countOf('dirty') > 0) return { target: retT, text: 'The chefs are out of clean plates! Drop your plates at the dish return' };
-    if (stalled && this.sinkPile.count > 3 && !this.isUnlocked('washer')) return { target: sinkT, text: 'The chefs are out of clean plates! Help wash at the sink to go faster' };
+    if (stalled && p.countOf('dirty') > 0) return { target: retT, text: 'Chefs need plates. Drop yours at the dish return' };
+    if (stalled && this.sinkPile.count > 3 && !this.isUnlocked('washer')) return { target: sinkT, text: 'Chefs need plates. Help wash at the sink' };
     const g = this.parties.find((q) => q.greet > 0 && q.table);
-    if (g) return { target: { ...g.table.service, r: 80 }, text: `${this.tableName(g.table)} wants to meet the owner. Go and greet them!` };
+    if (g) return { target: { ...g.table.service, r: 80 }, text: `${this.tableName(g.table)} wants to meet you` };
     return null;
   }
   freeGoal() {
@@ -1145,9 +1145,9 @@ export default class LoungeScene extends BranchScene {
     const sinkT = { x: this.sinkZone.cx, y: this.sinkZone.cy, r: 50 };
     const waiting = this.queue.find((q) => q.state === 'queued');
     if (waiting && !this.isUnlocked('host')) {
-      if (this.freeTableFor(waiting.size)) return { target: { x: LOUNGE.host.zone.x, y: LOUNGE.host.zone.y, r: 50 }, text: `A party of ${waiting.size} is waiting at the door. Seat them!` };
+      if (this.freeTableFor(waiting.size)) return { target: { x: LOUNGE.host.zone.x, y: LOUNGE.host.zone.y, r: 50 }, text: `Party of ${waiting.size} at the door. Seat them` };
       const dirty = this.tables.find((t) => !t.party && t.plates.count > 0);
-      if (dirty && !this.isUnlocked('busser') && p.carryCount < this.carryCap()) return { target: { ...dirty.service, r: 70 }, text: `Guests are waiting. Clear ${this.tableName(dirty)}!` };
+      if (dirty && !this.isUnlocked('busser') && p.carryCount < this.carryCap()) return { target: { ...dirty.service, r: 70 }, text: `Clear ${this.tableName(dirty)} for new guests` };
     }
     // fetch food for a table nobody is serving yet
     if (p.carryCount < this.carryCap()) {
@@ -1159,27 +1159,27 @@ export default class LoungeScene extends BranchScene {
         const n = this.partyNeeds(q, src.type) - p.countOf(src.type);
         const hurry = q.patience < q.patienceMax * 0.4 ? 'Hurry! ' : '';
         const what = `${n} ${this.E.itemName(src.type, n)}`;
-        if (src.count > 0) return { target: { x: src.zone.cx, y: src.zone.cy, r: 45 }, text: `${hurry}${this.tableName(q.table)} ordered ${what}. Pick up at the ${this.stationName(src)}` };
-        if (src.noPlates) return { target: sinkT, text: `The ${this.stationName(src)} is waiting for clean plates. Wash at the sink to speed it up` };
-        return { target: { x: src.zone.cx, y: src.zone.cy, r: 45 }, text: `${hurry}${what} for ${this.tableName(q.table)} coming up at the ${this.stationName(src)}…` };
+        if (src.count > 0) return { target: { x: src.zone.cx, y: src.zone.cy, r: 45 }, text: `${hurry}${this.tableName(q.table)} wants ${what}` };
+        if (src.noPlates) return { target: sinkT, text: `${this.stationName(src)} needs plates. Help wash` };
+        return { target: { x: src.zone.cx, y: src.zone.cy, r: 45 }, text: `${what} for ${this.tableName(q.table)} is cooking…` };
       }
     }
     if (!this.isUnlocked('busser')) {
       const room = p.carryCount < this.carryCap();
       const dirty = this.tables.filter((t) => !t.party && ((room && t.plates.count > 0) || t.cash.value > 0)).sort((a, b) => Math.hypot(a.x - p.x, a.y - p.y) - Math.hypot(b.x - p.x, b.y - p.y))[0];
-      if (dirty) return { target: { ...dirty.service, r: 70 }, text: dirty.plates.count > 0 && room ? `Clear ${this.tableName(dirty)} and collect the bill` : `Collect the bill at ${this.tableName(dirty)}` };
+      if (dirty) return { target: { ...dirty.service, r: 70 }, text: dirty.plates.count > 0 && room ? `Clear ${this.tableName(dirty)}` : `Collect the bill at ${this.tableName(dirty)}` };
     }
-    if (p.countOf('dirty') > 0) return { target: { x: this.returnZone.cx, y: this.returnZone.cy, r: 50 }, text: 'Drop the dirty plates at the dish return by the kitchen door' };
+    if (p.countOf('dirty') > 0) return { target: { x: this.returnZone.cx, y: this.returnZone.cy, r: 50 }, text: 'Drop the plates at the dish return' };
     const extra = p.carryItems.find((c) => c.type !== 'dirty' && p.countOf(c.type) > this.wantedCount(c.type));
-    if (extra) { const pr = this.producersOf(extra.type)[0]; if (pr) return { target: { x: pr.zone.cx, y: pr.zone.cy, r: 45 }, text: `Nobody needs that ${this.E.itemName(extra.type, 1)} now. Put it back at the ${this.stationName(pr)}` }; }
+    if (extra) { const pr = this.producersOf(extra.type)[0]; if (pr) return { target: { x: pr.zone.cx, y: pr.zone.cy, r: 45 }, text: `Put the extra ${this.E.itemName(extra.type, 1)} back` }; }
     if (this.boothZone && this.gs.cash > 0) {
       const up = this.upgradeList().filter((u) => (this.b.up[u.id] || 0) < u.max).sort((a, b) => this.upgradeCost(a) - this.upgradeCost(b))[0];
       const next = this.pads[0];
-      if (up && this.gs.cash >= this.upgradeCost(up) && (!next || this.gs.cash < next.remaining * 0.5)) return { target: { x: this.boothZone.cx, y: this.boothZone.cy, r: 45 }, text: `You can afford the ${up.name} upgrade. Visit the Upgrade Desk` };
+      if (up && this.gs.cash >= this.upgradeCost(up) && (!next || this.gs.cash < next.remaining * 0.5)) return { target: { x: this.boothZone.cx, y: this.boothZone.cy, r: 45 }, text: `You can afford ${up.name}` };
     }
-    if (this.sinkPile.count > 8 && this.rackPile.count < 8 && !this.isUnlocked('washer')) return { target: sinkT, text: `${this.sinkPile.count} plates are piling up at the sink. Help wash them` };
+    if (this.sinkPile.count > 8 && this.rackPile.count < 8 && !this.isUnlocked('washer')) return { target: sinkT, text: `${this.sinkPile.count} plates at the sink. Help wash` };
     const pile = this.cashPiles.filter((c) => c.value > 0).sort((a, b) => b.value - a.value)[0];
-    if (pile) return { target: { x: pile.x, y: pile.y, r: 60 }, text: pile === this.tillCash && this.isUnlocked('busser') ? `Emeka banked ${money(pile.value)} at the till. Collect it` : `Collect ${money(pile.value)}` };
+    if (pile) return { target: { x: pile.x, y: pile.y, r: 60 }, text: pile === this.tillCash && this.isUnlocked('busser') ? `Collect ${money(pile.value)} at the till` : `Collect ${money(pile.value)}` };
     return null;
   }
 
@@ -1189,7 +1189,7 @@ export default class LoungeScene extends BranchScene {
       this.goalTimer = 0.2;
       this.goal = this.computeGoal();
       const text = this.goal ? this.goal.text : '';
-      this.registry.set('hint', this.ctx.view.exploring ? 'Exploring. Drag to move around, pinch to zoom, twist to turn. Tap the eye to go back' : text && !this.tutorialDone() ? `Mama Ada: ${text}` : text);
+      this.registry.set('hint', this.ctx.view.exploring ? 'Exploring. Tap the eye to go back' : text && !this.tutorialDone() ? `Mama Ada: ${text}` : text);
     }
     const g = this.ctx.view.exploring ? null : this.goal;
     const target = g && g.target && g.arrow !== false ? { ...g.target, lift: 1.6 } : null;
@@ -1311,7 +1311,7 @@ class Booking {
     this.zone.setVisible(true);
     this.state = 'waiting';
     Sound.play('honk'); Haptic.tap('medium');
-    sc.game.events.emit('toast', 'A birthday party just sat down at the event table!');
+    sc.game.events.emit('toast', 'Birthday party at the event table!');
   }
   load(type) {
     this.loaded[type] = (this.loaded[type] || 0) + 1;

@@ -55,7 +55,7 @@ export default class UIScene extends Phaser.Scene {
     on('finished', this.showFinished);
     on('welcome-back', this.showWelcome);
     on('moved', () => this.hideMoveHint());
-    on('fame-up', ({ lvl }) => this.toast(`Fame level ${lvl}! More customers are on the way`, 'icon_star', 0xff9a1a));
+    on('fame-up', ({ lvl }) => this.toast(`Fame level ${lvl}!`, 'icon_star', 0xff9a1a));
     on('rush-start', this.rushBanner);
     on('branches-changed', () => { if (this.modal && this.modal.kind === 'map') this.showMap(); });
     on('blur', () => Object.assign(this.joy, { id: null, active: false, x: 0, y: 0 }));
@@ -537,12 +537,11 @@ export default class UIScene extends Phaser.Scene {
     const reopen = this.modal && this.modal.kind === 'goals';
     this.reopening = reopen;
     this.openModal((card) => {
-      const w = Math.min(360, this.W - 24); const rowH = 92; const h = 90 + data.list.length * rowH + 40;
+      const w = Math.min(360, this.W - 24); const rowH = 92; const h = 70 + data.list.length * rowH + 20;
       this.card(card, w, h, 'Goals', 0xff9a1a);
       this.closeX(card, w, h);
-      card.add(this.txt(0, -h / 2 + 76, 'Finish a goal and a harder one takes its place.', 12.5, 500, '#7a6450').setOrigin(0.5));
       data.list.forEach((g, i) => {
-        const y = -h / 2 + 96 + i * rowH + rowH / 2;
+        const y = -h / 2 + 70 + i * rowH + rowH / 2;
         const bg = this.add.graphics();
         bg.fillStyle(g.done ? 0xe4f8e6 : 0xffffff, 1); bg.fillRoundedRect(-w / 2 + 14, y - rowH / 2 + 5, w - 28, rowH - 10, 16);
         bg.lineStyle(2, g.done ? 0x2bb34a : 0xeadfc8, 1); bg.strokeRoundedRect(-w / 2 + 14, y - rowH / 2 + 5, w - 28, rowH - 10, 16);
@@ -576,8 +575,8 @@ export default class UIScene extends Phaser.Scene {
     this.openModal((card) => {
       // rows shrink (and drop the long text) so every branch, with its Collect button, fits on short phones
       const w = Math.min(370, this.W - 20);
-      const rowH = Math.max(112, Math.min(158, Math.floor((this.H - 24 - 104) / list.length)));
-      const compact = rowH < 150;
+      const rowH = Math.max(112, Math.min(132, Math.floor((this.H - 24 - 104) / list.length)));
+      const compact = this.H < 640;
       const h = 84 + list.length * rowH + 20;
       this.card(card, w, h, 'Your Branches', 0x0f8b8d);
       this.closeX(card, w, h);
@@ -605,14 +604,8 @@ export default class UIScene extends Phaser.Scene {
           return;
         }
         const perMin = Math.round(br.rate * 60);
-        const stats = `★ ${br.fame}   ·   ${br.progress} built${compact && perMin > 0 ? `   ·   ${money(perMin)}/min` : ''}`;
+        const stats = `★ ${br.fame}   ·   ${br.progress} built${perMin > 0 ? `   ·   ${money(perMin)}/min` : ''}`;
         card.add(this.txt(left + 54, top + 30, stats, 12.5, 600, '#7a6450'));
-        if (!compact) {
-          const info = br.here
-            ? (perMin > 0 ? `Your staff earn about ${money(perMin)}/min here while you're away (cash box holds ${money(br.cap)}).` : 'Hire staff here so it keeps earning while you\'re away.')
-            : (perMin > 0 ? `Earning ${money(perMin)}/min while you're away. ${br.manager ? 'Your manager can send it to you.' : 'Collect it at the till when you visit.'}` : 'No staff hired yet, so it isn\'t earning while you\'re away.');
-          card.add(this.txt(left, top + 52, info, 12, 500, '#3a2a1a', { wordWrap: { width: w - 52 } }));
-        }
         if (br.here) {
           card.add(this.txt(0, midY, 'YOU ARE HERE', 14, 700, '#0f8b8d').setOrigin(0.5));
           return;
@@ -622,7 +615,7 @@ export default class UIScene extends Phaser.Scene {
         card.add(img(this, left + 14, midY, 'icon_cash').setScale(0.5 * 0.45));
         card.add(this.txt(left + 34, midY - 10, money(br.pending), 16, 700, capFull ? '#c0392b' : '#2f7d4c'));
         if (capFull) card.add(this.txt(left + 34, midY + 9, 'Cash box full!', 10.5, 600, '#c0392b'));
-        else if (!br.manager && br.pending > 0) card.add(this.txt(left + 34, midY + 9, 'Hire a manager to collect here', 10, 600, '#7a6450'));
+        else if (!br.manager && br.pending > 0) card.add(this.txt(left + 34, midY + 9, 'Hire a manager to collect', 10, 600, '#7a6450'));
         const bw = 92;
         if (br.manager) {
           this.bigButton(card, w / 2 - 26 - bw * 1.5 - 8, midY, 'Collect', br.pending > 0 ? 0x2bb34a : 0xc9b99c, () => this.game.events.emit('collect-branch', br.key), bw, 40, 16);
@@ -641,15 +634,16 @@ export default class UIScene extends Phaser.Scene {
     const m = this.openModal((card) => {
       const w = Math.min(380, this.W - 20);
       const rowH = Math.max(66, Math.min(84, Math.floor((this.H - 200) / PROJECTS.length)));
-      const h = 128 + PROJECTS.length * rowH + 16;
+      const given = gs.stats.given || 0;
+      const head = given > 0 ? 118 : 100;
+      const h = head + 10 + PROJECTS.length * rowH + 16;
       this.card(card, w, h, 'Give back to Aba', 0x2f7d4c);
       this.closeX(card, w, h);
       const hon = honour(P);
-      const given = gs.stats.given || 0;
-      card.add(this.txt(0, -h / 2 + 74, hon.title ? `Aba calls you: ${hon.title}` : 'Build up your city. Every project helps all your branches.', 13, 700, '#2f7d4c', { align: 'center', wordWrap: { width: w - 40 } }).setOrigin(0.5));
-      card.add(this.txt(0, -h / 2 + 96, given > 0 ? `You have given ${money(given)} to the city` : 'Each level costs double the last, so there is always more to build.', 11.5, 500, '#7a6450', { align: 'center', wordWrap: { width: w - 40 } }).setOrigin(0.5));
+      card.add(this.txt(0, -h / 2 + 74, hon.title ? `Aba calls you: ${hon.title}` : 'Every project boosts all your branches', 13, 700, '#2f7d4c', { align: 'center', wordWrap: { width: w - 40 } }).setOrigin(0.5));
+      if (given > 0) card.add(this.txt(0, -h / 2 + 96, `Given to Aba: ${money(given)}`, 11.5, 500, '#7a6450', { align: 'center' }).setOrigin(0.5));
       PROJECTS.forEach((pr, i) => {
-        const y = -h / 2 + 118 + i * rowH + rowH / 2;
+        const y = -h / 2 + head + i * rowH + rowH / 2;
         const lvl = P[pr.id] || 0; const maxed = lvl >= pr.max;
         const cost = projectCost(pr, lvl); const can = !maxed && cash >= cost;
         const bg = this.add.graphics();
@@ -799,7 +793,7 @@ export default class UIScene extends Phaser.Scene {
       const mins = minutes >= 120 ? `${Math.round(minutes / 60)} hours` : `${minutes} min`;
       card.add(this.txt(0, -h / 2 + 160, `Your staff at ${branch} kept\nselling for ${mins}.`, 15, 500, '#3a2a1a', { align: 'center' }).setOrigin(0.5));
       card.add(label(this, 0, -h / 2 + 202, `+${money(earn)} at the till`, { size: 24, color: '#2bb34a', stroke: null, res: this.dpr * 1.5 }));
-      if (capped) card.add(this.txt(0, -h / 2 + 232, 'The cash box filled up! Upgrade it\nat the Upgrade Desk to hold more.', 12, 600, '#c0392b', { align: 'center' }).setOrigin(0.5));
+      if (capped) card.add(this.txt(0, -h / 2 + 232, 'The cash box is full.\nUpgrade it to hold more.', 12, 600, '#c0392b', { align: 'center' }).setOrigin(0.5));
       this.bigButton(card, 0, h / 2 - 46, 'Nice!', 0x2bb34a, () => this.closeModal(), 160);
     });
     m.onClose = () => this.time.delayedCall(500, () => this.game.events.emit('moment', 'back'));
@@ -818,10 +812,10 @@ export default class UIScene extends Phaser.Scene {
       const msg = stand
         ? `${this.ownerTitle()} spot is now the most famous\npuff-puff & zobo spot on Faulks Road.\nOpen your next branch from the map!`
         : lounge
-          ? 'GRA\'s most talked-about restaurant.\nBookings every night. Fame keeps\nrising. How far can you go?'
+          ? 'GRA\'s most talked-about restaurant.\nHow far can you go?'
           : factory
-            ? 'Your goods are in markets from Aba\nto Lagos and Kano. Now give back:\ntap the town hall to build up Aba.'
-          : 'Every table is full, every night.\nFame keeps rising, and so do the\ncustomers. Your next branch is on the map!';
+            ? 'Your goods now sell from\nAba to Lagos and Kano.'
+          : 'Every table is full, every night.\nYour next branch is on the map!';
       card.add(this.txt(0, -50, msg, 14.5, 500, '#3a2a1a', { align: 'center' }).setOrigin(0.5));
       const lines = [[factory ? 'Traders served' : 'Guests served', stats.served], [stand ? 'Shuttle orders' : lounge ? 'Party bookings' : factory ? 'Trucks loaded' : 'Keke orders', stats.vehicles], ['Earned here', money(stats.earned)]];
       lines.forEach(([k, v], i) => {
@@ -851,9 +845,9 @@ export default class UIScene extends Phaser.Scene {
       const w = Math.min(340, this.W - 28), h = 470;
       this.card(card, w, h, 'How to play here', 0x1d4537);
       const rows = [
-        ['walk', 'Walk', 'Drag anywhere to walk, or just tap where you want to go.'],
-        ['ring', 'Use things', 'Step into a glowing ring to pick up and serve dishes. Guests seat themselves. Take dirty plates to the dish return by the kitchen door.'],
-        ['look', 'Look around', 'Pinch to zoom. Twist two fingers to turn. Tap the eye button to explore the whole place.'],
+        ['walk', 'Walk', 'Drag to walk, or tap where to go.'],
+        ['ring', 'Use things', 'Step into a glowing ring to pick up and serve. Dirty plates go to the dish return.'],
+        ['look', 'Look around', 'Pinch to zoom, twist to turn. Tap the eye to explore.'],
       ];
       rows.forEach(([kind, title, body], i) => {
         const y = -h / 2 + 110 + i * 102;

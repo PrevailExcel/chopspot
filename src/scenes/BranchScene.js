@@ -337,7 +337,7 @@ export default class BranchScene extends Phaser.Scene {
     if (!this.tutorialDone() || this.unlockCount() < 3) return;
     if (this.rushLeft > 0) {
       this.rushLeft -= dt;
-      if (this.rushLeft <= 0) { this.rushLeft = 0; this.game.events.emit('toast', 'Rush hour is over. Nice work!'); }
+      if (this.rushLeft <= 0) { this.rushLeft = 0; this.game.events.emit('toast', 'Rush hour over. Nice!'); }
       this.registry.set('rush', Math.ceil(this.rushLeft));
       return;
     }
@@ -450,7 +450,7 @@ export default class BranchScene extends Phaser.Scene {
     // nudge about money piling up at the other branches
     BRANCH_ORDER.filter((k) => k !== this.branchKey && this.gs.owned[k]).forEach((k, i) => {
       const amt = pendingNow(k, this.gs.branches[k], now);
-      if (amt >= 50) this.time.delayedCall(2500 + i * 1500, () => this.game.events.emit('toast', `${BRANCHES[k].name} has ${money(amt)} waiting. Check the map!`));
+      if (amt >= 50) this.time.delayedCall(2500 + i * 1500, () => this.game.events.emit('toast', `${BRANCHES[k].name} has ${money(amt)} waiting`));
     });
   }
 
@@ -515,7 +515,7 @@ export default class BranchScene extends Phaser.Scene {
     saveState(this.gs);
     const ready = prepareBranch(key);
     this.fadeOutThen(() => ready.then(() => { this.scene.stop('UI'); this.scene.start(key); }).catch((e) => {
-      console.error(e); this.travelling = false; this.game.events.emit('toast', 'Could not open that branch. Check your connection.');
+      console.error(e); this.travelling = false; this.game.events.emit('toast', 'No connection. Try again.');
       this.fadeIn();
     }));
   }
@@ -690,7 +690,7 @@ export default class BranchScene extends Phaser.Scene {
     if (v && v.waiting && !this.b.vehicleIntro) {
       const t = { x: v.zone.cx, y: v.zone.cy };
       const what = v.cfg.label || (v.cfg.tex === 'm_keke' ? 'A keke' : 'A shuttle');
-      if (p.carryCount === 0) return { target: t, text: `${what} wants a big order! Deliver it before time runs out`, arrow: true };
+      if (p.carryCount === 0) return { target: t, text: `${what} is here with a big order`, arrow: true };
       return { target: t, text: v.cfg.bayText || 'Load the order in the yellow bay' };
     }
     const affordable = this.pads.filter((x) => st.cash >= x.remaining).sort((a, b) => a.remaining - b.remaining)[0];
@@ -700,9 +700,9 @@ export default class BranchScene extends Phaser.Scene {
     if (pile && pile.value >= 15 * this.def.goalScale && (!next || st.cash + pile.value >= next.remaining * 0.6)) return { target: { x: pile.x, y: pile.y }, text: 'Collect your cash' };
     const branch = this.branchFreeGoal();
     if (branch) return branch;
-    if (this.b.goals.some((g) => g.done)) return { text: 'A goal is complete! Tap Goals to claim your reward' };
-    if (next) return { text: next.def.name.startsWith('Hire ') ? `Earn ${money(next.remaining)} more to hire ${next.def.name.slice(5)}` : `Earn ${money(next.remaining)} more for the ${next.def.name}` };
-    return { text: 'Keep the customers happy and level up your fame!' };
+    if (this.b.goals.some((g) => g.done)) return { text: 'Goal done! Tap Goals to claim' };
+    if (next) return { text: next.def.name.startsWith('Hire ') ? `${money(next.remaining)} more to hire ${next.def.name.slice(5)}` : `${money(next.remaining)} more for the ${next.def.name}` };
+    return { text: 'Keep your customers happy' };
   }
 
   // ---------- upgrades & settings ----------
@@ -740,7 +740,7 @@ export default class BranchScene extends Phaser.Scene {
     Sound.play('win'); Haptic.tap('heavy');
     this.confetti(this.player.x, this.player.y - 80);
     const after = honour(P).title;
-    this.game.events.emit('toast', after !== before ? `Aba now calls you "${after}"!` : `${pr.name}: level ${lvl + 1}. Aba thanks you!`);
+    this.game.events.emit('toast', after !== before ? `Aba now calls you "${after}"!` : `${pr.name}: level ${lvl + 1}`);
     this.game.events.emit('projects-changed');
     this.track('project', 1);
     this.save();

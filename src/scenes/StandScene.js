@@ -234,9 +234,9 @@ export default class StandScene extends BranchScene {
       { kind: 'item:puff', text: (n) => `Sell ${n} puff-puff`, target: (t) => 12 + 6 * t },
       { kind: 'item:zobo', text: (n) => `Sell ${n} bottles of zobo`, target: (t) => 8 + 4 * t, ok: has('zobo1') },
       { kind: 'vehicle', text: (n) => `Fill ${n} shuttle order${n > 1 ? 's' : ''}`, target: (t) => 1 + Math.floor(t / 3), ok: has('bus'), weight: 1.4 },
-      { kind: 'streak', text: (n) => `Serve ${n} customers in a row with no walkouts`, target: (t) => 6 + 2 * t, weight: 1.3, ok: this.b.fame.lvl >= 2 },
+      { kind: 'streak', text: (n) => `Serve ${n} in a row, no walkouts`, target: (t) => 6 + 2 * t, weight: 1.3, ok: this.b.fame.lvl >= 2 },
       { kind: 'rush', text: (n) => `Serve ${n} customers during a rush hour`, target: (t) => 4 + 2 * t, ok: this.unlockCount() >= 3, weight: 1.3 },
-      { kind: 'tips', text: (n) => `Get ${n} tips from seated customers`, target: (t) => 4 + 2 * t, ok: has('seating') },
+      { kind: 'tips', text: (n) => `Get ${n} tips`, target: (t) => 4 + 2 * t, ok: has('seating') },
     ];
   }
 
@@ -439,10 +439,10 @@ export default class StandScene extends BranchScene {
     const zc = (z) => ({ x: z.cx, y: z.cy });
     if (b.tut === 0) {
       if (p.countOf('puff') > 0) b.tut = 1;
-      else return { target: zc(f1.zone), text: 'Walk to the fryer to grab hot puff-puff' };
+      else return { target: zc(f1.zone), text: 'Grab puff-puff from the fryer' };
     }
     if (b.tut === 1) {
-      if (p.carryCount === 0) return { target: zc(f1.zone), text: 'Grab some puff-puff from the fryer' };
+      if (p.carryCount === 0) return { target: zc(f1.zone), text: 'Grab puff-puff from the fryer' };
       return { target: zc(this.counterZone), text: 'Put the puff-puff on the counter' };
     }
     if (b.tut === 2) {
@@ -451,7 +451,7 @@ export default class StandScene extends BranchScene {
         if (p.countOf('puff') > 0) return { target: zc(this.counterZone), text: 'Your customer needs more puff-puff' };
         return { target: zc(f1.zone), text: 'Your customer needs more puff-puff' };
       }
-      return { target: zc(this.registerZone), text: 'Stand at the till so your customer can pay', r: 40 };
+      return { target: zc(this.registerZone), text: 'Go to the till to take payment', r: 40 };
     }
     if (b.tut === 3) {
       if (this.registerCash.value <= 0) b.tut = 4;
@@ -461,12 +461,12 @@ export default class StandScene extends BranchScene {
       if (this.isUnlocked('zobo1')) { b.tut = 5; this.ensureGoals(); }
       else {
         const pad = this.pads.find((x) => x.def.id === 'zobo1');
-        if (pad && this.gs.cash >= Math.min(pad.remaining, 10)) return { target: { x: pad.x, y: pad.y }, text: 'Stand on the pad to unlock the Zobo Cooler', lift: 40 };
-        return { text: 'Serve more customers to afford the Zobo Cooler' };
+        if (pad && this.gs.cash >= Math.min(pad.remaining, 10)) return { target: { x: pad.x, y: pad.y }, text: 'Stand on the pad to buy the Zobo Cooler', lift: 40 };
+        return { text: 'Sell more to buy the Zobo Cooler' };
       }
     }
     if (this.isUnlocked('sign') && !this.gs.owned.buka && this.gs.cash >= 3000 && Math.floor(this.time.now / 6000) % 2 === 0) {
-      return { text: 'You can open a new branch! Tap the map button' };
+      return { text: 'New branch ready. Tap the map' };
     }
     return this.freeGoal();
   }
@@ -481,7 +481,7 @@ export default class StandScene extends BranchScene {
           const nm = type === 'puff' ? 'puff-puff' : 'zobo';
           if (p.countOf(type) > 0) return { target: { x: this.counterZone.cx, y: this.counterZone.cy }, text: `Restock the counter with ${nm}`, arrow: false };
           const src = this.producersOf(type).sort((a, b) => b.count - a.count)[0];
-          return { target: src ? { x: src.zone.cx, y: src.zone.cy } : null, text: `Customers want ${nm}! Grab some`, arrow: false };
+          return { target: src ? { x: src.zone.cx, y: src.zone.cy } : null, text: `Customers want ${nm}`, arrow: false };
         }
       }
     }
