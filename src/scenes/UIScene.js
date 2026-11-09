@@ -574,49 +574,60 @@ export default class UIScene extends Phaser.Scene {
     const reopen = this.modal && this.modal.kind === 'map';
     this.reopening = reopen;
     this.openModal((card) => {
-      const w = Math.min(370, this.W - 20); const rowH = Math.max(134, Math.min(158, Math.floor((this.H - 120) / list.length))); const h = 84 + list.length * rowH + 20;
+      // rows shrink (and drop the long text) so every branch, with its Collect button, fits on short phones
+      const w = Math.min(370, this.W - 20);
+      const rowH = Math.max(112, Math.min(158, Math.floor((this.H - 24 - 104) / list.length)));
+      const compact = rowH < 150;
+      const h = 84 + list.length * rowH + 20;
       this.card(card, w, h, 'Your Branches', 0x0f8b8d);
       this.closeX(card, w, h);
       list.forEach((br, i) => {
         const y = -h / 2 + 76 + i * rowH + rowH / 2;
+        const top = y - rowH / 2 + 6, bottom = y + rowH / 2 - 6;
         const bg = this.add.graphics();
-        bg.fillStyle(br.here ? 0xe0f4f4 : 0xffffff, 1); bg.fillRoundedRect(-w / 2 + 12, y - rowH / 2 + 6, w - 24, rowH - 12, 18);
-        bg.lineStyle(2, br.here ? 0x0f8b8d : 0xeadfc8, 1); bg.strokeRoundedRect(-w / 2 + 12, y - rowH / 2 + 6, w - 24, rowH - 12, 18);
+        bg.fillStyle(br.here ? 0xe0f4f4 : 0xffffff, 1); bg.fillRoundedRect(-w / 2 + 12, top, w - 24, rowH - 12, 18);
+        bg.lineStyle(2, br.here ? 0x0f8b8d : 0xeadfc8, 1); bg.strokeRoundedRect(-w / 2 + 12, top, w - 24, rowH - 12, 18);
         card.add(bg);
         const left = -w / 2 + 26;
-        card.add(img(this, left + 24, y - 38, br.icon).setScale(0.5 * 0.7));
-        card.add(this.txt(left + 54, y - 58, br.name, 16, 700, '#3a2a1a'));
+        const midY = bottom - 26; // centre line of the cash and the buttons
+        card.add(img(this, left + 24, top + 28, br.icon).setScale(0.5 * (compact ? 0.6 : 0.7)));
+        card.add(this.txt(left + 54, top + 8, br.name, 16, 700, '#3a2a1a'));
         if (!br.owned) {
-          card.add(this.txt(left + 54, y - 36, br.reqMet ? (br.pitch || 'Open a buka at Ariaria Market: table service with jollof, noodles, akara, bread and malt.') : br.requiresText, 12, 500, '#7a6450', { wordWrap: { width: w - 110 } }));
+          const pitch = br.reqMet ? ((compact ? br.blurb : br.pitch) || br.blurb) : br.requiresText;
+          card.add(this.txt(left + 54, top + 30, pitch, 12, 500, '#7a6450', { wordWrap: { width: w - 110 } }));
           const can = br.reqMet && cash >= br.cost;
-          const b = this.bigButton(card, 0, y + 38, `Open for ${money(br.cost)}`, can ? 0x2bb34a : 0xc9b99c, () => {
+          const b = this.bigButton(card, 0, midY, `Open for ${money(br.cost)}`, can ? 0x2bb34a : 0xc9b99c, () => {
             if (!can) { Sound.play('deny'); return; }
             this.closeModal(true);
             this.game.events.emit('buy-branch', br.key);
-          }, w - 70, 46, 18);
+          }, w - 70, compact ? 40 : 46, compact ? 16 : 18);
           if (!can) b.setAlpha(0.9);
           return;
         }
         const perMin = Math.round(br.rate * 60);
-        card.add(this.txt(left + 54, y - 36, `★ ${br.fame}   ·   ${br.progress} built`, 12.5, 600, '#7a6450'));
-        const info = br.here
-          ? (perMin > 0 ? `Your staff earn about ${money(perMin)}/min here while you're away (cash box holds ${money(br.cap)}).` : 'Hire staff here so it keeps earning while you\'re away.')
-          : (perMin > 0 ? `Earning ${money(perMin)}/min while you're away. ${br.manager ? 'Your manager can send it to you.' : 'Collect it at the till when you visit.'}` : 'No staff hired yet, so it isn\'t earning while you\'re away.');
-        card.add(this.txt(left, y - 14, info, 12, 500, '#3a2a1a', { wordWrap: { width: w - 52 } }));
+        const stats = `★ ${br.fame}   ·   ${br.progress} built${compact && perMin > 0 ? `   ·   ${money(perMin)}/min` : ''}`;
+        card.add(this.txt(left + 54, top + 30, stats, 12.5, 600, '#7a6450'));
+        if (!compact) {
+          const info = br.here
+            ? (perMin > 0 ? `Your staff earn about ${money(perMin)}/min here while you're away (cash box holds ${money(br.cap)}).` : 'Hire staff here so it keeps earning while you\'re away.')
+            : (perMin > 0 ? `Earning ${money(perMin)}/min while you're away. ${br.manager ? 'Your manager can send it to you.' : 'Collect it at the till when you visit.'}` : 'No staff hired yet, so it isn\'t earning while you\'re away.');
+          card.add(this.txt(left, top + 52, info, 12, 500, '#3a2a1a', { wordWrap: { width: w - 52 } }));
+        }
         if (br.here) {
-          card.add(this.txt(0, y + 42, 'YOU ARE HERE', 14, 700, '#0f8b8d').setOrigin(0.5));
+          card.add(this.txt(0, midY, 'YOU ARE HERE', 14, 700, '#0f8b8d').setOrigin(0.5));
           return;
         }
         // waiting cash
         const capFull = br.pending >= br.cap;
-        card.add(img(this, left + 14, y + 40, 'icon_cash').setScale(0.5 * 0.45));
-        card.add(this.txt(left + 34, y + 30, money(br.pending), 16, 700, capFull ? '#c0392b' : '#2f7d4c'));
-        if (capFull) card.add(this.txt(left + 34, y + 49, 'Cash box full!', 10.5, 600, '#c0392b'));
+        card.add(img(this, left + 14, midY, 'icon_cash').setScale(0.5 * 0.45));
+        card.add(this.txt(left + 34, midY - 10, money(br.pending), 16, 700, capFull ? '#c0392b' : '#2f7d4c'));
+        if (capFull) card.add(this.txt(left + 34, midY + 9, 'Cash box full!', 10.5, 600, '#c0392b'));
+        else if (!br.manager && br.pending > 0) card.add(this.txt(left + 34, midY + 9, 'Hire a manager to collect here', 10, 600, '#7a6450'));
         const bw = 92;
         if (br.manager) {
-          this.bigButton(card, w / 2 - 26 - bw * 1.5 - 8, y + 40, 'Collect', br.pending > 0 ? 0x2bb34a : 0xc9b99c, () => this.game.events.emit('collect-branch', br.key), bw, 40, 16);
+          this.bigButton(card, w / 2 - 26 - bw * 1.5 - 8, midY, 'Collect', br.pending > 0 ? 0x2bb34a : 0xc9b99c, () => this.game.events.emit('collect-branch', br.key), bw, 40, 16);
         }
-        this.bigButton(card, w / 2 - 26 - bw / 2, y + 40, 'Go there', 0x0f8b8d, () => { this.closeModal(true); this.game.events.emit('travel', br.key); }, bw, 40, 16);
+        this.bigButton(card, w / 2 - 26 - bw / 2, midY, 'Go there', 0x0f8b8d, () => { this.closeModal(true); this.game.events.emit('travel', br.key); }, bw, 40, 16);
       });
     }, 'map');
     this.reopening = false;

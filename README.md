@@ -69,7 +69,7 @@ Travel between branches with the **map** button. You can change your character a
 
 ## Billboards (real ad space)
 
-In the GRA Lounge, ads run on two screens instead: one on the facade facing the street and one above the bar (`SCREENS` in `src/ads.js`). Each 2D branch has three roadside billboards: a **main board** on the street edge of the lot (in view whenever you're at the counter) and **two boards across the street**. Vezio is on both main boards. The street boards rotate between Vezio and a "Your brand here" board.
+In the GRA Lounge, ads run on two screens instead: one on the facade facing the street and one above the bar (`SCREENS` in `src/ads.js`). Each 2D branch has three roadside billboards: a **main board** on the street edge of the lot (in view whenever you're at the counter) and **two boards across the street**. The boards rotate between Vezio, 2Wise (an image creative in `public/ads/2wise.jpg`, built from the real 2Wise logo and app screenshot) and a "Your brand here" board; the GRA screens show Vezio and 2Wise too. In the Chop Factory all three boards stand across the street so they never cover the shop cash or the upgrade desk, and any board fades out when you walk behind it.
 
 Everything is in **`src/ads.js`**:
 - `CREATIVES`: each advertiser's link, plus either a board painted in code or an image you drop into `public/ads/` (1200×560 px).

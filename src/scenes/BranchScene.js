@@ -465,7 +465,7 @@ export default class BranchScene extends Phaser.Scene {
       const reqMet = this.branchReqMet(d);
       return {
         key, name: d.full, icon: d.icon, owned, here,
-        cost: d.cost || 0, reqMet, requiresText: d.requiresText, pitch: d.pitch,
+        cost: d.cost || 0, reqMet, requiresText: d.requiresText, pitch: d.pitch, blurb: d.blurb,
         pending: owned && !here ? pendingNow(key, b, now) : 0,
         cap: owned ? cashCap(key, b) : 0,
         rate: owned ? passiveRate(key, b) : 0,

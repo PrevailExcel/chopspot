@@ -22,6 +22,11 @@ export const CREATIVES = {
     url: null, // falls back to BOOKING_URL
     paint: paintHouse,
   },
+  '2wise': {
+    label: '2Wise',
+    url: `https://2wise.com.ng/?${UTM}`,
+    image: 'ads/2wise.jpg', // built from the 2Wise logo and app screenshot (1200x560)
+  },
   // Example of an image creative (put the file in public/ads/):
   // shoprite: { label: 'Brand name', url: 'https://brand.ng', image: 'ads/brand.png' },
 };
@@ -29,25 +34,26 @@ export const CREATIVES = {
 /** Boards per branch. x/y is where the legs stand. The main board sits on the street edge of the lot; the others are across the street. */
 /** screens inside the 3D GRA Lounge (facade screen faces the street, bar screen faces the dining room) */
 export const SCREENS = {
-  'gra-facade': ['vezio', 'house'],
-  'gra-bar': ['vezio'],
+  'gra-facade': ['vezio', '2wise', 'house'],
+  'gra-bar': ['2wise', 'vezio'],
 };
 
 export const SLOTS = {
   stand: [
-    { id: 'faulks-main', x: 270, y: 1450, ads: ['vezio'] },          // in view whenever you're at the counter
-    { id: 'faulks-left', x: 230, y: 1720, ads: ['house', 'vezio'] },  // across the street
-    { id: 'faulks-right', x: 770, y: 1720, ads: ['vezio', 'house'] },
+    { id: 'faulks-main', x: 270, y: 1450, ads: ['vezio', '2wise'] },  // in view whenever you're at the counter
+    { id: 'faulks-left', x: 230, y: 1720, ads: ['2wise', 'house'] },  // across the street
+    { id: 'faulks-right', x: 770, y: 1720, ads: ['vezio', '2wise'] },
   ],
   buka: [
-    { id: 'ariaria-main', x: 325, y: 1450, ads: ['vezio'] },
-    { id: 'ariaria-left', x: 230, y: 1720, ads: ['vezio', 'house'] },
-    { id: 'ariaria-right', x: 770, y: 1720, ads: ['house', 'vezio'] },
+    { id: 'ariaria-main', x: 325, y: 1450, ads: ['2wise', 'vezio'] },
+    { id: 'ariaria-left', x: 230, y: 1720, ads: ['vezio', '2wise'] },
+    { id: 'ariaria-right', x: 770, y: 1720, ads: ['house', '2wise'] },
   ],
+  // the factory's shop cash and upgrade desk sit near the front fence, so its boards stand across the street
   factory: [
-    { id: 'factory-main', x: 250, y: 1450, ads: ['vezio'] },
-    { id: 'factory-left', x: 230, y: 1720, ads: ['vezio', 'house'] },
-    { id: 'factory-right', x: 770, y: 1720, ads: ['house', 'vezio'] },
+    { id: 'factory-main', x: 500, y: 1720, ads: ['vezio', '2wise'] },
+    { id: 'factory-left', x: 150, y: 1720, ads: ['2wise', 'house'] },
+    { id: 'factory-right', x: 850, y: 1720, ads: ['house', 'vezio'] },
   ],
 };
 
@@ -255,6 +261,13 @@ export class Billboard {
   }
 
   update(dt) {
+    const p = this.scene.player;
+    if (p) {
+      const top = this.slot.y - FRAME_H * ANCHOR_Y;
+      const behind = Math.abs(p.x - this.slot.x) < FRAME_W / 2 + 10 && p.y < this.slot.y && p.y > top - 40;
+      const a = behind ? 0.3 : 1;
+      if (Math.abs(this.frame.alpha - a) > 0.01) { const k = Math.min(1, dt * 8); const v = this.frame.alpha + (a - this.frame.alpha) * k; this.frame.setAlpha(v); this.face.setAlpha(v); }
+    }
     if (this.ads.length > 1) {
       this.t += dt;
       if (this.t >= ROTATE_EVERY) { this.t = 0; this.flip(); }

@@ -40,7 +40,7 @@ const pwa = VitePWA({
     ],
   },
   workbox: {
-    globPatterns: ['**/*.{js,css,html,woff2}', 'icons/icon-192.png', 'icons/favicon-64.png'],
+    globPatterns: ['**/*.{js,css,html,woff2}', 'icons/icon-192.png', 'icons/favicon-64.png', 'ads/*.{jpg,png,webp}'],
     maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
     navigateFallback: 'index.html',
     cleanupOutdatedCaches: true,

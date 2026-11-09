@@ -409,6 +409,7 @@ export const BRANCHES = {
   buka: {
     key: 'buka', name: 'Ariaria Buka', full: 'Ariaria Buka', area: 'Ariaria Market', icon: 'icon_jollof',
     unlocks: BUKA_UNLOCKS, upgrades: BUKA_UPGRADES,
+    blurb: 'Table service at Ariaria Market.',
     cost: 3000, requires: 'sign', requiresText: 'Unlock the Neon Sign at your Faulks Road spot first',
     goalScale: 4, xpScale: 1,
     automation: { waiter1: 0.3, waiter2: 0.2, cleaner: 0.3, kloader: 0.1, generator: 0.1 },
@@ -418,6 +419,7 @@ export const BRANCHES = {
     key: 'lounge', name: 'GRA Lounge', full: 'GRA Lounge', area: 'GRA', icon: 'icon_lounge',
     unlocks: LOUNGE_UNLOCKS, upgrades: LOUNGE_UPGRADES,
     cost: 25000, requires: 'generator', requiresBranch: 'buka', requiresText: 'Install the Generator & Lights at your Ariaria Buka first',
+    blurb: 'A high-end 3D restaurant in GRA.',
     pitch: 'A high-end restaurant in GRA, in full 3D. Seat your guests, serve a continental menu, book parties and bring in a live band.',
     goalScale: 15, xpScale: 1,
     automation: { host: 0.15, waiter1: 0.25, waiter2: 0.2, busser: 0.2, washer: 0.05, planner: 0.1, manager: 0.05 },
@@ -427,6 +429,7 @@ export const BRANCHES = {
     key: 'factory', name: 'Chop Factory', full: 'Chop Factory', area: 'Aba', icon: 'icon_factory',
     unlocks: FACTORY_UNLOCKS, upgrades: FACTORY_UPGRADES,
     cost: 60000, requires: 'generator', requiresBranch: 'buka', requiresText: 'Install the Generator & Lights at your Ariaria Buka first',
+    blurb: 'Your own made-in-Aba factory.',
     pitch: 'Your own factory: palm oil, soap, Aba leather shoes, shirts and handbags. Sell to traders and load trucks for markets across Nigeria.',
     goalScale: 40, xpScale: 1,
     automation: { attendant: 0.3, loader1: 0.25, loader2: 0.15, belt_oil: 0.04, belt_soap: 0.04, belt_shoes: 0.04, belt_shirts: 0.04, belt_bags: 0.04, electrician: 0.05, manager: 0.05 },

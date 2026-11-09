@@ -1,11 +1,15 @@
 import Phaser from 'phaser';
 import { buildAllTextures } from '../art.js';
-import { buildAdTextures } from '../ads.js';
+import { buildAdTextures, CREATIVES } from '../ads.js';
 import { loadState } from '../state.js';
 import { prepareBranch } from '../lounge/loader.js';
 
 export default class BootScene extends Phaser.Scene {
   constructor() { super('Boot'); }
+  preload() {
+    // image billboards (see CREATIVES in ads.js); a missing file just leaves that ad out
+    for (const [id, ad] of Object.entries(CREATIVES)) if (ad.image) this.load.image(`ad_${id}`, ad.image);
+  }
   create() {
     buildAllTextures(this);
     buildAdTextures(this);
