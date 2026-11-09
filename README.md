@@ -50,7 +50,7 @@ npx cap open android   # open in Android Studio, then Run or Build > Generate Si
 
 App id: `com.reevatech.puffzobo` (change it in `capacitor.config.json` and `android/app/build.gradle` before publishing).
 
-## The two branches
+## The branches
 
 **Faulks Road Spot** (counter service): fry puff-puff, pour zobo, stock the counter, check customers out at the till, load the green-and-brown shuttle buses.
 12 unlocks, including staff: Chioma (cashier), Tunde and Emeka (runners), **Bayo (shuttle loader)** and **Uju (manager)**. The Neon Sign shows *YOURNAME'S CHOP SPOT*.
@@ -60,6 +60,10 @@ App id: `com.reevatech.puffzobo` (change it in `capacitor.config.json` and `andr
 
 **GRA Lounge (Level 3, full 3D)**: opens for ₦25,000 after the Generator & Lights at Ariaria. A high-end continental restaurant with its own street: guests arrive in parties and wait at the door; seat them at the host stand, or after a few seconds they find a free table themselves. Carry dishes from the kitchen pass (steak, seafood pasta, Caesar salad, pizza, chocolate cake, mocktails), collect the bill plus tip, clear the plates and drop them at the dish return by the kitchen door. A kitchen porter washes plates slowly on his own; standing at the sink (or hiring Kelechi) washes them faster. Every plated dish needs a clean plate from the rack. Tables sometimes ask to meet the owner: walk over to greet them for a bigger tip. Parties of 1 to 4, VIP tables that tip big, birthday-party bookings at the event table with a timer, and decor that raises prices (chandelier, live band, gallery wall, terrace, fountain).
 26 unlocks, staff: Ifeoma (host), Kelechi (dishwasher), Chidi and Adaeze (waiters), Emeka (busser), Tobi (event planner), Mrs. Eze (manager), plus chefs, a bartender, a band and a security guard. The player's name is on the facade, the gate pylon and the kitchen sign. Controls: drag (joystick) or tap where to go; pinch to zoom, twist two fingers to turn, two-finger drag up/down to tilt; the eye button opens Explore mode (drag to pan around the whole site); the camera button switches overview/close-up and resets the view. On desktop: click to walk, mouse wheel to zoom, right-drag to turn. A one-time "How to play here" card and floating labels (SEAT GUESTS, PICK UP, SERVE, CLEAR, TO THE SINK, WASH PLATES, GREET, COLLECT) and a hint bar that always points at the next useful job guide new players. You only pick up dishes a table is waiting for; extras go back on the pass. Steam, grill flames, candle light and a soft film grade (high quality) are particle and post effects, cheap enough for phones.
+
+**Chop Factory (Level 4, 2D)**: opens for ₦60,000 after the Generator & Lights at Ariaria (it does not need the GRA). Your own factory making what Aba is known for: palm oil, bar soap, Aba leather shoes, shirts and leather handbags. Grab cartons from each line's pallet and either stock the **factory shop** (traders buy wholesale and pay right at the counter, no till) or load the **trucks** in the three bays: pickups for Aba markets (Ariaria, Ekeoha, Ahia Ohuru, Cemetery Market, Relief Market Owerri), box trucks for other cities (Mile 1 and Oil Mill in Port Harcourt, Ogbete in Enugu, Onitsha Main Market, Wuse in Abuja) and trailers for Balogun and Trade Fair in Lagos, Kurmi in Kano and Onne Port for export. Conveyor **belts** carry each line's cartons up to the dispatch rack beside the bays, so the walking shrinks as you build. Now and then NEPA takes light: the lines slow to half speed (they never stop) until you start the generator or the light comes back, and Sunday the electrician handles it once hired. 19 unlocks, staff: Chinedu (shop), Ikenna and Amaka (truck loaders), Sunday (electrician), Mrs. Okafor (manager); the finale is a MADE IN ABA sign with your name on it.
+
+It is built to feel smoother than Faulks Road: you start with an 8-carton trolley, picking and dropping are faster, you can tap anywhere to walk there (the joystick still works), the dispatch rack only hands you what a truck or the counter needs, cash flies to you from further away, trucks wait longer and still pay 80% for a partial load, and the hint bar always has a next step. Try it with **`?demo=factory`**. All its numbers are in `FACTORY`, `FACTORY_UNLOCKS` and `FACTORY_UPGRADES` in `src/config.js`; the scene is `src/scenes/FactoryScene.js` and the belts are `src/objects/Belt.js`.
 
 Travel between branches with the **map** button. You can change your character any time from **Settings → Change character**.
 
@@ -143,6 +147,7 @@ src/
     StandScene.js       branch 1: counter + queue + till + seating
     BukaScene.js        branch 2: table service, dirty plates, sink
     LoungeScene.js      branch 3: 3D restaurant flow (parties, host, VIPs, bookings, staff)
+    FactoryScene.js     branch 4: lines, belts, dispatch rack, factory shop, trucks, power cuts, staff
     UIScene.js          HUD, joystick, goals, branch map, upgrades, character creator, modals, title
   entities/             Rig (characters), Customer, Vehicle, staff AI (Runner, Cashier, Loader, Waiter, Cleaner, Manager)
   objects/              Producer, Pile, CashPile, Pad, Zone, Bubble, fly animation

@@ -21,6 +21,12 @@ export const ITEMS = {
   pizza: { name: 'Pizza', price: 80, tex: 'icon_pizza', icon: 'icon_pizza', h: 6, plural: 'pizzas' },
   dessert: { name: 'Chocolate cake', price: 45, tex: 'icon_dessert', icon: 'icon_dessert', h: 6, plural: 'slices of chocolate cake' },
   drink: { name: 'Mocktail', price: 35, tex: 'icon_drink', icon: 'icon_drink', h: 8, plural: 'mocktails' },
+  // Chop Factory: made in Aba
+  oil: { name: 'Palm oil', price: 60, tex: 'item_oil', icon: 'icon_oil', h: 22, plural: 'kegs of palm oil', one: 'keg of palm oil' },
+  soap: { name: 'Bar soap', price: 75, tex: 'item_soap', icon: 'icon_soap', h: 15, plural: 'cartons of soap', one: 'carton of soap' },
+  shoes: { name: 'Leather shoes', price: 210, tex: 'item_shoes', icon: 'icon_shoes', h: 14, plural: 'boxes of shoes', one: 'box of shoes' },
+  shirts: { name: 'Shirts', price: 170, tex: 'item_shirts', icon: 'icon_shirts', h: 13, plural: 'bales of shirts', one: 'bale of shirts' },
+  bags: { name: 'Handbags', price: 280, tex: 'item_bags', icon: 'icon_bags', h: 20, plural: 'cartons of bags', one: 'carton of bags' },
 };
 
 export const PLAYER = {
@@ -285,6 +291,95 @@ export const LOUNGE_UPGRADES = [
 // decor that lifts prices ("ambience")
 export const LOUNGE_AMBIENCE = { chandelier: 0.06, band: 0.08, art: 0.06, fountain: 0.1, terrace: 0.04 };
 
+// ---------- Branch 4: Chop Factory (2D, made in Aba) ----------
+// Lines make finished goods. Sell them to traders at the factory shop, or load the trucks that pull
+// into the bays. Belts carry each line's goods up to the dispatch rack next to the bays.
+export const FACTORY = {
+  bounds: { x1: 62, x2: 938, y1: 236, y2: 1335 },
+  spawn: { x: 500, y: 1080 },
+  carry: 8,          // you start with a bigger trolley than at Faulks Road
+  pickEvery: 0.075, dropEvery: 0.06,
+  lines: {
+    oil: { type: 'oil', kind: 'oilpress', x: 200, y: 640, interval: 2.0, cap: 12, start: 5 },
+    soap: { type: 'soap', kind: 'soapline', x: 800, y: 640, interval: 2.2, cap: 12, start: 4 },
+    shoes: { type: 'shoes', kind: 'shoebench', x: 200, y: 850, interval: 2.8, cap: 10, start: 3 },
+    shirts: { type: 'shirts', kind: 'sewing', x: 800, y: 850, interval: 2.6, cap: 10, start: 3 },
+    bags: { type: 'bags', kind: 'bagline', x: 200, y: 1060, interval: 3.2, cap: 10, start: 3 },
+  },
+  // dispatch rack: one slot per product, with a pick-up strip between it and the bays
+  rack: { y: 478, x1: 290, x2: 710, cap: 14, slots: { oil: 330, shoes: 415, bags: 500, shirts: 585, soap: 670 }, zone: { x1: 292, x2: 708, y1: 362, y2: 428 } },
+  // conveyor belts from each line's pallet to its rack slot (walk over them freely)
+  belts: {
+    oil: [[300, 664], [330, 664], [330, 494]],
+    shoes: [[300, 874], [415, 874], [415, 494]],
+    bags: [[300, 1084], [500, 1084], [500, 494]],
+    soap: [[700, 664], [670, 664], [670, 494]],
+    shirts: [[700, 874], [585, 874], [585, 494]],
+  },
+  beltEvery: 0.5,   // seconds between cartons riding a belt
+  beltSpeed: 150,
+  shop: {
+    counter: { x1: 300, x2: 700, y1: 1190, y2: 1230 },
+    dropZone: { x1: 366, x2: 694, y1: 1112, y2: 1178 },
+    shelves: { oil: 340, soap: 420, shoes: 500, shirts: 580, bags: 660 },
+    shelfCap: 12,
+    cash: { x: 236, y: 1252 },
+    orderSpot: { x: 500, y: 1282 }, gap: 52, max: 4,
+    traders: { spawnEvery: 5.5, speed: 150, patience: 60, take: 0.14 },
+  },
+  booth: { x: 120, y: 1196, zone: { x: 120, y: 1266, r: 46 } },
+  generator: { x: 878, y: 1220, zone: { x: 878, y: 1290, r: 48 } },
+  office: { x: 840, y: 1060 },
+  sign: { x: 166, y: 528 },
+  // trucks: a pickup from Aba, box trucks to other cities, trailers to Lagos, Kano and the port
+  bays: [
+    { id: 'bay1', unlock: 'bay1', tex: 'm_pickup', kind: 'Pickup', park: { x: 820, y: 152 }, zone: { x: 820, y: 300, r: 62 }, cash: { x: 924, y: 302 },
+      firstDelay: 3, cooldown: [5, 9], bonus: 1.4, wait: 70, waitPerItem: 4, bubbleY: 142, exhaustX: 96, size: [4, 9],
+      buyers: ['Ariaria Market', 'Ekeoha Shopping Centre', 'Ahia Ohuru (New Market)', 'Cemetery Market', 'Relief Market, Owerri'] },
+    { id: 'bay2', unlock: 'bay2', tex: 'm_lorry', kind: 'Box truck', park: { x: 520, y: 152 }, zone: { x: 520, y: 300, r: 62 }, cash: { x: 640, y: 296 },
+      firstDelay: 4, cooldown: [8, 13], bonus: 1.65, wait: 85, waitPerItem: 4, bubbleY: 168, exhaustX: 130, size: [9, 16],
+      buyers: ['Mile 1 Market, Port Harcourt', 'Oil Mill Market, Port Harcourt', 'Ogbete Main Market, Enugu', 'Onitsha Main Market', 'Wuse Market, Abuja'] },
+    { id: 'bay3', unlock: 'bay3', tex: 'm_trailer', kind: 'Trailer', park: { x: 200, y: 152 }, zone: { x: 200, y: 300, r: 62 }, cash: { x: 80, y: 300 },
+      firstDelay: 5, cooldown: [12, 20], bonus: 1.95, wait: 110, waitPerItem: 4, bubbleY: 176, exhaustX: 160, size: [16, 28],
+      buyers: ['Balogun Market, Lagos', 'Trade Fair Complex, Lagos', 'Kurmi Market, Kano', 'Onne Port (export)'] },
+  ],
+  // NEPA takes light now and then: machines slow down (never stop) until you start the generator or it comes back
+  power: { first: 240, every: [300, 420], length: 30, slow: 0.5 },
+  staffSpeed: 175, staffCarry: 6,
+};
+
+export const FACTORY_UNLOCKS = [
+  { id: 'bay1', name: 'Loading Bay', sub: 'Pickups from Aba markets', cost: 900, x: 820, y: 300, icon: 'icon_truck' },
+  { id: 'soap', name: 'Soap Line', cost: 2200, x: 800, y: 640, icon: 'icon_soap' },
+  { id: 'belt_oil', name: 'Palm Oil Belt', sub: 'Carries kegs to the rack', cost: 3500, x: 330, y: 546, icon: 'icon_belt' },
+  { id: 'booth', name: 'Upgrade Desk', cost: 4500, x: 120, y: 1206, icon: 'icon_up' },
+  { id: 'attendant', name: 'Hire Chinedu', sub: 'Runs the shop', cost: 6500, x: 780, y: 1150, icon: 'icon_cashier' },
+  { id: 'belt_soap', name: 'Soap Belt', sub: 'Carries soap to the rack', cost: 9000, x: 670, y: 546, icon: 'icon_belt' },
+  { id: 'shoes', name: 'Shoe Line', sub: 'Aba leather shoes', cost: 13000, x: 200, y: 850, icon: 'icon_shoes' },
+  { id: 'loader1', name: 'Hire Ikenna', sub: 'Loads the trucks', cost: 17000, x: 370, y: 312, icon: 'icon_loader' },
+  { id: 'bay2', name: 'Bay 2', sub: 'Box trucks to other cities', cost: 24000, x: 520, y: 300, icon: 'icon_truck' },
+  { id: 'belt_shoes', name: 'Shoe Belt', cost: 30000, x: 415, y: 772, icon: 'icon_belt' },
+  { id: 'shirts', name: 'Garment Line', sub: 'Made-in-Aba shirts', cost: 40000, x: 800, y: 850, icon: 'icon_shirts' },
+  { id: 'electrician', name: 'Hire Sunday', sub: 'Electrician: starts the gen', cost: 50000, x: 764, y: 1292, icon: 'icon_bolt' },
+  { id: 'belt_shirts', name: 'Garment Belt', cost: 62000, x: 585, y: 772, icon: 'icon_belt' },
+  { id: 'loader2', name: 'Hire Amaka', sub: 'Loads the trucks', cost: 78000, x: 680, y: 312, icon: 'icon_loader' },
+  { id: 'bags', name: 'Bag Line', sub: 'Leather handbags', cost: 98000, x: 200, y: 1060, icon: 'icon_bags' },
+  { id: 'bay3', name: 'Bay 3', sub: 'Trailers to Lagos, Kano and Onne Port', cost: 125000, x: 200, y: 300, icon: 'icon_truck' },
+  { id: 'belt_bags', name: 'Bag Belt', cost: 155000, x: 500, y: 982, icon: 'icon_belt' },
+  { id: 'manager', name: 'Hire Mrs. Okafor', sub: 'Factory manager', cost: 200000, x: 840, y: 1060, icon: 'icon_manager' },
+  { id: 'sign', name: 'MADE IN ABA Sign', sub: 'The finest factory in Aba', cost: 300000, x: 166, y: 528, icon: 'icon_factory' },
+];
+
+export const FACTORY_UPGRADES = [
+  { id: 'carry', name: 'Bigger Trolley', desc: 'Carry +1 carton', icon: 'icon_tray', base: 2500, mult: 1.42, max: 20 },
+  { id: 'speed', name: 'Safety Boots', desc: 'Walk 6% faster', icon: 'icon_shoe', base: 3000, mult: 1.45, max: 15, step: 0.06 },
+  { id: 'cook', name: 'Faster Lines', desc: 'Lines run 10% faster', icon: 'icon_fire', base: 3500, mult: 1.45, max: 20 },
+  { id: 'price', name: 'Made-in-Aba Quality', desc: 'Prices +15%', icon: 'icon_star', base: 4500, mult: 1.55, max: 40 },
+  { id: 'patience', name: 'Dispatch Phone', desc: 'Trucks and traders wait 10% longer', icon: 'icon_fan', base: 5000, mult: 1.6, max: 12 },
+  { id: 'staff', name: 'Staff Training', desc: 'Staff 12% faster', icon: 'icon_loader', base: 7000, mult: 1.5, max: 20, needs: 'attendant' },
+  { id: 'safe', name: 'Bigger Safe', desc: 'Holds more while you\'re away', icon: 'icon_safe', base: 15000, mult: 1.7, max: 15, needs: 'loader1' },
+];
+
 // ---------- "Give back to Aba": community projects ----------
 // The money sink for rich players. Each level is a real gift to the city and gives a small
 // permanent bonus to EVERY branch. Costs double each level, so there is always a next project.
@@ -328,8 +423,17 @@ export const BRANCHES = {
     automation: { host: 0.15, waiter1: 0.25, waiter2: 0.2, busser: 0.2, washer: 0.05, planner: 0.1, manager: 0.05 },
     baseRate: 38, capBase: 40000,
   },
+  factory: {
+    key: 'factory', name: 'Chop Factory', full: 'Chop Factory', area: 'Aba', icon: 'icon_factory',
+    unlocks: FACTORY_UNLOCKS, upgrades: FACTORY_UPGRADES,
+    cost: 60000, requires: 'generator', requiresBranch: 'buka', requiresText: 'Install the Generator & Lights at your Ariaria Buka first',
+    pitch: 'Your own factory: palm oil, soap, Aba leather shoes, shirts and handbags. Sell to traders and load trucks for markets across Nigeria.',
+    goalScale: 40, xpScale: 1,
+    automation: { attendant: 0.3, loader1: 0.25, loader2: 0.15, belt_oil: 0.04, belt_soap: 0.04, belt_shoes: 0.04, belt_shirts: 0.04, belt_bags: 0.04, electrician: 0.05, manager: 0.05 },
+    baseRate: 110, capBase: 150000,
+  },
 };
-export const BRANCH_ORDER = ['stand', 'buka', 'lounge'];
+export const BRANCH_ORDER = ['stand', 'buka', 'lounge', 'factory'];
 
 export const COLORS = {
   grass: 0x7cc35a,

@@ -10,7 +10,7 @@ import { Sound } from '../audio.js';
 export class Vehicle {
   constructor(scene, cfg) {
     this.scene = scene; this.cfg = cfg;
-    this.im = img(scene, 1300, cfg.park.y, cfg.tex).setDepth(cfg.park.y);
+    this.im = img(scene, 1300, cfg.park.y, cfg.tex).setDepth(cfg.park.y + (cfg.depthBias || 0));
     this.zone = new Zone(scene, { x: cfg.zone.x, y: cfg.zone.y, r: cfg.zone.r }, { color: 0xffd21f });
     this.bubble = new Bubble(scene, { big: true });
     this.state = 'away';
@@ -48,7 +48,7 @@ export class Vehicle {
       if (dx < 2) {
         im.x = c.park.x; im.y = c.park.y;
         this.state = 'waiting';
-        this.order = this.scene.makeVehicleOrder(); this.loaded = {};
+        this.order = this.scene.makeVehicleOrder(this); this.loaded = {};
         this.waitMax = (c.wait + c.waitPerItem * this.totalItems) * this.scene.vehicleWaitMult();
         this.waitLeft = this.waitMax;
         this.refreshBubble(); this.bubble.show(true);

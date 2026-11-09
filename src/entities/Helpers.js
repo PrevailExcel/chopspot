@@ -13,7 +13,7 @@ function nameTag(scene, name) {
  * Shared behaviour for every hired helper: walking a route, picking food up from a machine,
  * and handing items over with the same flying animation the player gets.
  */
-class Worker {
+export class Worker {
   constructor(scene, x, y, look, name) {
     this.scene = scene;
     this.rig = new Rig(scene, x, y, look);

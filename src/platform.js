@@ -27,16 +27,17 @@ export const Haptic = {
 
 const KEY = 'puffzobo.save.v1';
 
-/** ?demo=gra opens straight into the GRA Lounge with some cash; nothing is saved (the real save is untouched). */
+/** ?demo=gra opens straight into the GRA Lounge, ?demo=factory into the Chop Factory, with some cash; nothing is saved (the real save is untouched). */
 /* global __DEMO_DEFAULT__ */
 export const DEMO = (() => {
   try { const q = new URLSearchParams(location.search).get('demo'); if (q) return q === 'off' ? null : q; } catch (e) { /* ignore */ }
   return typeof __DEMO_DEFAULT__ !== 'undefined' && __DEMO_DEFAULT__ ? __DEMO_DEFAULT__ : null;
 })();
 function demoSave(real) {
+  const factory = DEMO === 'factory';
   return {
-    v: 2, cash: 20000, branch: 'lounge', owned: { stand: true, buka: true, lounge: true }, profile: real && real.profile ? real.profile : null,
-    branches: { stand: { unlocked: { fryer1: true, sign: true }, tut: 9 }, buka: { unlocked: { jollof: true, t1: true, t2: true, generator: true }, tut: 9 }, lounge: {} },
+    v: 2, cash: factory ? 5000 : 20000, branch: factory ? 'factory' : 'lounge', owned: { stand: true, buka: true, lounge: !factory, factory }, profile: real && real.profile ? real.profile : null,
+    branches: { stand: { unlocked: { fryer1: true, sign: true }, tut: 9 }, buka: { unlocked: { jollof: true, t1: true, t2: true, generator: true }, tut: 9 }, ...(factory ? { factory: {} } : { lounge: {} }) },
     settings: real && real.settings ? real.settings : { sfx: true, music: true, haptic: true }, stats: { served: 0, earned: 0, buses: 0, start: Date.now() }, t: Date.now(),
   };
 }
@@ -48,7 +49,7 @@ export const Store = {
   load() {
     let real = null;
     try { const raw = localStorage.getItem(KEY); real = raw ? JSON.parse(raw) : null; } catch (e) { real = memoryFallback; }
-    if (DEMO === 'gra') return demoState || (demoState = demoSave(real));
+    if (DEMO === 'gra' || DEMO === 'factory') return demoState || (demoState = demoSave(real));
     return real;
   },
   save(data) {

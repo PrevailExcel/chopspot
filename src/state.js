@@ -32,6 +32,7 @@ export function freshBranch(key) {
   };
   if (key === 'stand') { b.unlocked.fryer1 = true; b.px = 500; b.py = 780; }
   if (key === 'buka') { b.unlocked.jollof = true; b.unlocked.t1 = true; b.unlocked.t2 = true; b.px = 500; b.py = 640; }
+  if (key === 'factory') { b.unlocked.oil = true; b.px = 500; b.py = 1080; }
   if (key === 'lounge') { b.unlocked.grill = true; b.unlocked.t1 = true; b.unlocked.t2 = true; b.px = 1000; b.py = 1820; b.introDone = false; }
   return b;
 }

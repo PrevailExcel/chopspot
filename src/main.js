@@ -7,6 +7,7 @@ import BootScene from './scenes/BootScene.js';
 import StandScene from './scenes/StandScene.js';
 import BukaScene from './scenes/BukaScene.js';
 import LoungeScene from './scenes/LoungeScene.js';
+import FactoryScene from './scenes/FactoryScene.js';
 import UIScene from './scenes/UIScene.js';
 
 // Render at device resolution (capped at 2x for battery) and display at CSS size.
@@ -31,7 +32,7 @@ async function start() {
     render: { antialias: true, powerPreference: 'high-performance' },
     input: { activePointers: 3 },
     fps: { target: 60, panicMax: 10 },
-    scene: [BootScene, StandScene, BukaScene, LoungeScene, UIScene],
+    scene: [BootScene, StandScene, BukaScene, LoungeScene, FactoryScene, UIScene],
   });
   game.registry.set('dpr', dpr);
   const lift = () => { if (game.canvas) { game.canvas.style.position = 'relative'; game.canvas.style.zIndex = '1'; } };

@@ -781,6 +781,7 @@ export function buildAllTextures(scene) {
   buildBuka(scene);
   buildLoungeIcons(scene);
   buildProjectIcons(scene);
+  buildFactory(scene);
 }
 
 // =====================================================================
@@ -1394,6 +1395,253 @@ function buildProjectIcons(scene) {
     c.fillStyle = '#ff7a1a'; for (let i = 0; i < 4; i++) rr(c, 14 + i * 9.5, 34, 7, 18, 1), c.fill();
     c.fillStyle = '#3fb46b'; c.beginPath(); c.arc(46, 46, 9, 0, 7); c.fill(); c.strokeStyle = '#1d3b1a'; c.lineWidth = 1.5; c.stroke();
     c.fillStyle = '#ffffff'; c.font = '700 11px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('N', 46, 46.5);
+  });
+}
+
+// =====================================================================
+// Branch 4: Chop Factory (made in Aba)
+// =====================================================================
+function drawKeg(c, x, y, w, h) {
+  // yellow jerrycan full of red palm oil
+  rr(c, x, y + h * 0.18, w, h * 0.82, 4); c.fillStyle = lin(c, x, 0, x + w, 0, [[0, '#f2c200'], [0.45, '#ffe066'], [1, '#d9a400']]); c.fill(); c.strokeStyle = '#8a6a00'; c.lineWidth = 1.4; c.stroke();
+  rr(c, x + w * 0.12, y + h * 0.42, w * 0.76, h * 0.34, 3); c.fillStyle = lin(c, 0, y + h * 0.42, 0, y + h * 0.76, [[0, '#e8551a'], [1, '#b8320c']]); c.fill();
+  c.fillStyle = 'rgba(255,255,255,0.75)'; c.font = `700 ${Math.round(h * 0.17)}px Fredoka, system-ui, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('OIL', x + w / 2, y + h * 0.6);
+  rr(c, x + w * 0.58, y, w * 0.26, h * 0.22, 2); fillStroke(c, '#e33d3d', '#7a1010', 1);
+  c.strokeStyle = '#8a6a00'; c.lineWidth = 2; c.beginPath(); c.moveTo(x + w * 0.12, y + h * 0.2); c.quadraticCurveTo(x + w * 0.3, y, x + w * 0.5, y + h * 0.2); c.stroke();
+}
+function drawCarton(c, x, y, w, h, band, mark) {
+  rr(c, x, y, w, h, 2); c.fillStyle = lin(c, 0, y, 0, y + h, [[0, '#e3b97a'], [1, '#c4904c']]); c.fill(); c.strokeStyle = '#7a5226'; c.lineWidth = 1.3; c.stroke();
+  c.fillStyle = 'rgba(122,82,38,0.35)'; c.fillRect(x + w * 0.45, y, w * 0.1, h);
+  if (band) { c.fillStyle = band; c.fillRect(x + 2, y + h * 0.55, w - 4, h * 0.22); }
+  if (mark) mark(c);
+}
+function drawShoeBox(c, x, y, w, h) {
+  rr(c, x, y + h * 0.28, w, h * 0.72, 2); c.fillStyle = '#7a4a2a'; c.fill(); c.strokeStyle = '#3d220f'; c.lineWidth = 1.3; c.stroke();
+  rr(c, x - 1.5, y, w + 3, h * 0.36, 2); c.fillStyle = '#9a6238'; c.fill(); c.stroke();
+  c.fillStyle = '#f3e3c3'; rr(c, x + w * 0.3, y + h * 0.5, w * 0.4, h * 0.3, 2); c.fill();
+  c.fillStyle = '#3d220f'; c.beginPath(); c.moveTo(x + w * 0.34, y + h * 0.74); c.quadraticCurveTo(x + w * 0.42, y + h * 0.56, x + w * 0.5, y + h * 0.62); c.lineTo(x + w * 0.66, y + h * 0.7); c.lineTo(x + w * 0.66, y + h * 0.76); c.closePath(); c.fill();
+}
+function drawBale(c, x, y, w, h) {
+  const cols = ['#2c7be5', '#ffffff', '#0f8b8d', '#e33d5c'];
+  for (let i = 0; i < 4; i++) { rr(c, x + 1, y + h - (i + 1) * (h / 4.2), w - 2, h / 4.2, 3); c.fillStyle = cols[i]; c.fill(); c.strokeStyle = 'rgba(0,0,0,0.3)'; c.lineWidth = 1; c.stroke(); }
+  rr(c, x, y, w, h, 4); c.fillStyle = 'rgba(220,240,255,0.25)'; c.fill(); c.strokeStyle = 'rgba(255,255,255,0.8)'; c.lineWidth = 1.2; c.stroke();
+  c.fillStyle = '#c9a24a'; c.fillRect(x + w * 0.3, y, 2.5, h); c.fillRect(x + w * 0.66, y, 2.5, h);
+}
+function drawHandbag(c, cx, y, w, h) {
+  c.strokeStyle = '#5e3a1a'; c.lineWidth = 2.6; c.beginPath(); c.arc(cx, y + h * 0.36, w * 0.26, Math.PI, 0); c.stroke();
+  c.beginPath(); c.moveTo(cx - w / 2, y + h * 0.34); c.lineTo(cx + w / 2, y + h * 0.34); c.lineTo(cx + w * 0.44, y + h); c.lineTo(cx - w * 0.44, y + h); c.closePath();
+  c.fillStyle = lin(c, 0, y + h * 0.34, 0, y + h, [[0, '#c8783a'], [1, '#8a4a1c']]); c.fill(); c.strokeStyle = '#4a2a10'; c.lineWidth = 1.4; c.stroke();
+  c.fillStyle = '#5e3a1a'; c.beginPath(); c.moveTo(cx - w / 2, y + h * 0.34); c.lineTo(cx + w / 2, y + h * 0.34); c.lineTo(cx, y + h * 0.62); c.closePath(); c.fill();
+  c.fillStyle = '#ffd23f'; c.beginPath(); c.arc(cx, y + h * 0.6, 2.2, 0, 7); c.fill();
+}
+function machineBase(c, w, h) {
+  shadow(c, w / 2, h - 16, w / 2 - 8, 13);
+  rr(c, 10, h - 46, w - 20, 30, 5); c.fillStyle = lin(c, 0, h - 46, 0, h - 16, [[0, '#8a939b'], [1, '#5e666e']]); c.fill(); c.strokeStyle = '#3a4047'; c.lineWidth = 2; c.stroke();
+  c.fillStyle = '#ffd23f'; for (let x = 16; x < w - 20; x += 22) { c.beginPath(); c.moveTo(x, h - 16); c.lineTo(x + 10, h - 16); c.lineTo(x + 18, h - 22); c.lineTo(x + 8, h - 22); c.closePath(); c.fill(); }
+}
+function buildFactory(scene) {
+  const W = 150, H = 150;
+  // ---- items ----
+  tex(scene, 'item_oil', 26, 32, 0.5, 0.96, (c) => drawKeg(c, 2, 2, 22, 28));
+  tex(scene, 'item_soap', 34, 26, 0.5, 0.9, (c) => drawCarton(c, 2, 3, 30, 21, '#2bb34a', (x) => { rr(x, 9, 7, 16, 8, 3); x.fillStyle = '#f2f7ff'; x.fill(); x.strokeStyle = '#2c7be5'; x.lineWidth = 1; x.stroke(); }));
+  tex(scene, 'item_shoes', 36, 24, 0.5, 0.9, (c) => drawShoeBox(c, 2, 2, 32, 20));
+  tex(scene, 'item_shirts', 34, 24, 0.5, 0.9, (c) => drawBale(c, 2, 2, 30, 20));
+  tex(scene, 'item_bags', 32, 32, 0.5, 0.94, (c) => drawHandbag(c, 16, 2, 26, 28));
+  // ---- icons ----
+  const S = 64;
+  const T = (key, fn) => tex(scene, key, S, S, 0.5, 0.5, fn);
+  T('icon_oil', (c) => { drawKeg(c, 14, 8, 36, 48); });
+  T('icon_soap', (c) => { drawCarton(c, 8, 14, 48, 38, '#2bb34a', (x) => { rr(x, 18, 20, 26, 12, 5); x.fillStyle = '#f2f7ff'; x.fill(); x.strokeStyle = '#2c7be5'; x.lineWidth = 1.5; x.stroke(); }); });
+  T('icon_shoes', (c) => {
+    c.beginPath(); c.moveTo(6, 44); c.quadraticCurveTo(8, 26, 22, 26); c.lineTo(30, 30); c.quadraticCurveTo(44, 34, 56, 40); c.quadraticCurveTo(60, 46, 56, 50); c.lineTo(8, 50); c.closePath();
+    c.fillStyle = lin(c, 0, 26, 0, 50, [[0, '#8a4a1c'], [1, '#4a2a10']]); c.fill(); c.strokeStyle = '#2a1608'; c.lineWidth = 2; c.stroke();
+    rr(c, 4, 48, 56, 6, 3); c.fillStyle = '#1b1b1b'; c.fill();
+    c.strokeStyle = '#f3e3c3'; c.lineWidth = 1.4; for (let i = 0; i < 3; i++) { c.beginPath(); c.moveTo(24 + i * 5, 30); c.lineTo(28 + i * 5, 36); c.stroke(); }
+    c.fillStyle = 'rgba(255,255,255,0.3)'; c.beginPath(); c.ellipse(40, 40, 10, 3, -0.2, 0, 7); c.fill();
+  });
+  T('icon_shirts', (c) => {
+    c.beginPath(); c.moveTo(18, 10); c.lineTo(26, 6); c.quadraticCurveTo(32, 14, 38, 6); c.lineTo(46, 10); c.lineTo(58, 22); c.lineTo(50, 30); c.lineTo(46, 26); c.lineTo(46, 58); c.lineTo(18, 58); c.lineTo(18, 26); c.lineTo(14, 30); c.lineTo(6, 22); c.closePath();
+    c.fillStyle = lin(c, 0, 6, 0, 58, [[0, '#4f9cf0'], [1, '#2a5fb0']]); c.fill(); c.strokeStyle = '#173e75'; c.lineWidth = 2; c.stroke();
+    c.strokeStyle = '#ffffff'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(32, 14); c.lineTo(32, 56); c.stroke();
+    c.fillStyle = '#ffffff'; for (const y of [22, 32, 42, 52]) { c.beginPath(); c.arc(32, y, 1.6, 0, 7); c.fill(); }
+  });
+  T('icon_bags', (c) => drawHandbag(c, 32, 8, 48, 50));
+  T('icon_belt', (c) => {
+    rr(c, 4, 24, 56, 18, 9); c.fillStyle = '#3a4047'; c.fill();
+    c.strokeStyle = '#8a939b'; c.lineWidth = 2; for (let x = 12; x < 56; x += 8) { c.beginPath(); c.moveTo(x, 26); c.lineTo(x - 3, 40); c.stroke(); }
+    for (const x of [12, 52]) { c.beginPath(); c.arc(x, 33, 6, 0, 7); c.fillStyle = '#c9ced4'; c.fill(); }
+    drawCarton(c, 20, 6, 22, 18, '#ff7a1a');
+    c.fillStyle = '#ffd23f'; c.beginPath(); c.moveTo(46, 52); c.lineTo(58, 52); c.lineTo(52, 60); c.closePath(); c.fill();
+  });
+  T('icon_truck', (c) => {
+    rr(c, 4, 14, 36, 32, 3); c.fillStyle = '#f2f2f2'; c.fill(); c.strokeStyle = '#4b525b'; c.lineWidth = 2; c.stroke();
+    c.fillStyle = '#ff7a1a'; c.fillRect(6, 34, 32, 5);
+    rr(c, 40, 22, 20, 24, 4); c.fillStyle = '#2c7be5'; c.fill(); c.stroke();
+    rr(c, 44, 26, 12, 9, 2); c.fillStyle = '#bfe8ff'; c.fill();
+    for (const x of [16, 50]) { c.beginPath(); c.arc(x, 48, 7, 0, 7); c.fillStyle = '#1a1a1a'; c.fill(); c.beginPath(); c.arc(x, 48, 3, 0, 7); c.fillStyle = '#c9ced4'; c.fill(); }
+  });
+  T('icon_bolt', (c) => {
+    c.beginPath(); c.arc(32, 32, 27, 0, 7); c.fillStyle = lin(c, 0, 5, 0, 59, [[0, '#ffe58a'], [1, '#f5a400']]); c.fill(); c.strokeStyle = '#8a6200'; c.lineWidth = 2.5; c.stroke();
+    c.beginPath(); c.moveTo(36, 8); c.lineTo(18, 36); c.lineTo(30, 36); c.lineTo(26, 56); c.lineTo(46, 26); c.lineTo(34, 26); c.closePath(); c.fillStyle = '#ffffff'; c.fill(); c.strokeStyle = '#8a6200'; c.lineWidth = 2; c.stroke();
+  });
+  T('icon_factory', (c) => {
+    c.fillStyle = '#8a939b'; c.fillRect(42, 6, 8, 22);
+    c.fillStyle = 'rgba(200,200,200,0.85)'; c.beginPath(); c.arc(46, 6, 5, 0, 7); c.arc(52, 2, 4, 0, 7); c.fill();
+    c.beginPath(); c.moveTo(6, 56); c.lineTo(6, 28); c.lineTo(20, 20); c.lineTo(20, 30); c.lineTo(34, 22); c.lineTo(34, 32); c.lineTo(58, 22); c.lineTo(58, 56); c.closePath();
+    c.fillStyle = lin(c, 0, 20, 0, 56, [[0, '#ff9a3c'], [1, '#e8452c']]); c.fill(); c.strokeStyle = '#7a1e10'; c.lineWidth = 2; c.stroke();
+    c.fillStyle = '#ffe58a'; for (const x of [12, 26, 40]) c.fillRect(x, 38, 9, 8);
+    rr(c, 46, 40, 8, 16, 1); c.fillStyle = '#5e3a1a'; c.fill();
+  });
+  // ---- machines (pallet sits to the side, see Producer KINDS) ----
+  tex(scene, 'm_oilpress', W, H, 0.5, 0.86, (c) => {
+    machineBase(c, W, H);
+    // big oil drum
+    rr(c, 14, 44, 46, 64, 8); c.fillStyle = lin(c, 14, 0, 60, 0, [[0, '#9a1f10'], [0.45, '#d9441c'], [1, '#7a1608']]); c.fill(); c.strokeStyle = '#4a0e05'; c.lineWidth = 2; c.stroke();
+    for (const y of [58, 92]) { c.fillStyle = 'rgba(0,0,0,0.25)'; c.fillRect(14, y, 46, 3); }
+    ell(c, 37, 44, 23, 6); fillStroke(c, '#c2361a', '#4a0e05', 1.5);
+    // press frame and screw
+    c.fillStyle = '#4b525b'; c.fillRect(74, 24, 8, 84); c.fillRect(124, 24, 8, 84); rr(c, 70, 18, 66, 12, 3); c.fillStyle = '#5e666e'; c.fill();
+    c.fillStyle = '#c9ced4'; c.fillRect(100, 4, 6, 40); rr(c, 86, 4, 34, 6, 3); c.fillStyle = '#e33d3d'; c.fill();
+    rr(c, 84, 44, 38, 30, 4); c.fillStyle = lin(c, 0, 44, 0, 74, [[0, '#ffb02e'], [1, '#d97a12']]); c.fill(); c.strokeStyle = '#7a4200'; c.lineWidth = 1.5; c.stroke();
+    // oil spout into a keg
+    c.fillStyle = '#c2361a'; c.fillRect(101, 74, 4, 10);
+    drawKeg(c, 92, 82, 22, 24);
+  });
+  tex(scene, 'm_soapline', W, H, 0.5, 0.86, (c) => {
+    machineBase(c, W, H);
+    // mixing vat
+    c.beginPath(); c.moveTo(14, 40); c.lineTo(66, 40); c.lineTo(60, 104); c.lineTo(20, 104); c.closePath();
+    c.fillStyle = lin(c, 14, 0, 66, 0, [[0, '#9aa3ab'], [0.5, '#e9edf0'], [1, '#7d8a96']]); c.fill(); c.strokeStyle = '#3a4047'; c.lineWidth = 2; c.stroke();
+    ell(c, 40, 40, 26, 7); fillStroke(c, '#f4f7ff', '#3a4047', 1.5);
+    c.fillStyle = 'rgba(160,220,255,0.9)'; for (const [x, y, r] of [[30, 38, 3], [44, 36, 4], [52, 40, 2.5]]) { c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); }
+    c.strokeStyle = '#3a4047'; c.lineWidth = 3; c.beginPath(); c.moveTo(40, 14); c.lineTo(40, 40); c.stroke(); rr(c, 32, 8, 16, 8, 2); c.fillStyle = '#2c7be5'; c.fill();
+    // cutter table with bars
+    rr(c, 74, 62, 66, 42, 4); c.fillStyle = '#5e666e'; c.fill(); c.strokeStyle = '#3a4047'; c.lineWidth = 2; c.stroke();
+    for (let i = 0; i < 4; i++) { rr(c, 80 + i * 14, 70, 11, 18, 3); c.fillStyle = ['#f2f7ff', '#9ff0c0', '#f2f7ff', '#ffd6ec'][i]; c.fill(); }
+    c.fillStyle = '#c9ced4'; c.fillRect(76, 44, 62, 6); c.fillRect(104, 30, 6, 20);
+  });
+  tex(scene, 'm_shoebench', W, H, 0.5, 0.86, (c) => {
+    machineBase(c, W, H);
+    rr(c, 8, 56, 134, 18, 4); c.fillStyle = lin(c, 0, 56, 0, 74, [[0, '#a0682e'], [1, '#6e4520']]); c.fill(); c.strokeStyle = '#3d220f'; c.lineWidth = 2; c.stroke();
+    c.fillStyle = '#5e3a1a'; c.fillRect(16, 74, 8, 32); c.fillRect(126, 74, 8, 32);
+    // stitching machine
+    rr(c, 20, 22, 14, 36, 3); c.fillStyle = '#1d2a3a'; c.fill(); rr(c, 20, 18, 52, 14, 5); c.fill();
+    c.fillStyle = '#c9ced4'; c.fillRect(64, 30, 4, 18);
+    rr(c, 28, 24, 30, 5, 2); c.fillStyle = '#c9a24a'; c.fill();
+    // leather hides and a finished shoe
+    c.beginPath(); c.moveTo(80, 56); c.quadraticCurveTo(84, 40, 102, 42); c.quadraticCurveTo(124, 38, 132, 56); c.closePath(); c.fillStyle = '#b8743a'; c.fill(); c.strokeStyle = '#5e3a1a'; c.lineWidth = 1.5; c.stroke();
+    c.beginPath(); c.moveTo(86, 56); c.quadraticCurveTo(88, 46, 98, 46); c.lineTo(104, 48); c.quadraticCurveTo(114, 50, 120, 54); c.lineTo(120, 56); c.closePath(); c.fillStyle = '#3d220f'; c.fill();
+    c.strokeStyle = '#6b737b'; c.lineWidth = 2; c.beginPath(); c.moveTo(70, 60); c.lineTo(76, 46); c.stroke();
+  });
+  tex(scene, 'm_sewing', W, H, 0.5, 0.86, (c) => {
+    machineBase(c, W, H);
+    rr(c, 8, 58, 134, 16, 4); c.fillStyle = '#e9e1d2'; c.fill(); c.strokeStyle = '#8a7a5a'; c.lineWidth = 2; c.stroke();
+    c.fillStyle = '#8a7a5a'; c.fillRect(16, 74, 6, 32); c.fillRect(128, 74, 6, 32);
+    for (const x of [14, 78]) {
+      rr(c, x, 34, 12, 26, 3); c.fillStyle = '#ffffff'; c.fill(); c.strokeStyle = '#3a4047'; c.lineWidth = 1.5; c.stroke();
+      rr(c, x, 26, 46, 12, 5); c.fillStyle = '#ffffff'; c.fill(); c.stroke();
+      c.fillStyle = '#e33d5c'; c.fillRect(x + 4, 28, 30, 3);
+      c.fillStyle = '#9aa3ab'; c.fillRect(x + 38, 36, 3, 14);
+      c.beginPath(); c.arc(x + 8, 22, 4, 0, 7); c.fillStyle = ['#2c7be5', '#ffd23f'][x > 50 ? 1 : 0]; c.fill();
+    }
+    rr(c, 40, 48, 34, 12, 3); c.fillStyle = '#2c7be5'; c.fill();
+    rr(c, 104, 48, 34, 12, 3); c.fillStyle = '#0f8b8d'; c.fill();
+  });
+  tex(scene, 'm_bagline', W, H, 0.5, 0.86, (c) => {
+    machineBase(c, W, H);
+    rr(c, 8, 56, 134, 18, 4); c.fillStyle = '#4b525b'; c.fill(); c.strokeStyle = '#2a2e33'; c.lineWidth = 2; c.stroke();
+    c.fillStyle = '#2a2e33'; c.fillRect(16, 74, 8, 32); c.fillRect(126, 74, 8, 32);
+    // hide being cut and bags taking shape
+    c.beginPath(); c.moveTo(14, 56); c.quadraticCurveTo(20, 36, 44, 38); c.quadraticCurveTo(66, 34, 70, 56); c.closePath(); c.fillStyle = '#c8783a'; c.fill(); c.strokeStyle = '#5e3a1a'; c.lineWidth = 1.5; c.stroke();
+    c.setLineDash && c.setLineDash([3, 3]); c.strokeStyle = '#ffffff'; c.beginPath(); c.moveTo(24, 50); c.lineTo(60, 46); c.stroke(); c.setLineDash && c.setLineDash([]);
+    drawHandbag(c, 92, 24, 26, 32); drawHandbag(c, 122, 28, 22, 28);
+    c.fillStyle = '#c9ced4'; c.fillRect(40, 22, 3, 18); c.fillStyle = '#e33d3d'; rr(c, 36, 16, 11, 7, 2); c.fill();
+  });
+  tex(scene, 'm_pallet', 84, 34, 0.5, 0.6, (c) => {
+    shadow(c, 42, 26, 40, 7);
+    c.fillStyle = '#b8864e'; for (let i = 0; i < 5; i++) { rr(c, 4 + i * 16, 8, 13, 16, 2); c.fill(); }
+    c.fillStyle = '#8a5e2e'; c.fillRect(2, 22, 80, 5); c.fillRect(2, 6, 80, 4);
+  });
+  // ---- dispatch rack, shop counter, office, sign ----
+  tex(scene, 'm_rack', 440, 96, 0.5, 0.9, (c) => {
+    shadow(c, 220, 86, 214, 9);
+    c.fillStyle = '#2c5fa8'; for (let i = 0; i <= 5; i++) c.fillRect(8 + i * 83.5, 10, 7, 78);
+    for (const y of [26, 56, 82]) { rr(c, 6, y, 428, 7, 2); c.fillStyle = '#ff7a1a'; c.fill(); c.strokeStyle = '#a84a00'; c.lineWidth = 1.2; c.stroke(); }
+    rr(c, 150, 0, 140, 16, 4); c.fillStyle = '#1d2a3a'; c.fill();
+    c.font = '700 11px Fredoka, system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#ffd23f'; c.fillText('DISPATCH', 220, 8.5);
+  });
+  tex(scene, 'm_shopcounter', 420, 86, 0.5, 0.9, (c) => {
+    shadow(c, 210, 76, 206, 9);
+    rr(c, 4, 22, 412, 54, 6); c.fillStyle = lin(c, 0, 22, 0, 76, [[0, '#3a6fb8'], [1, '#22477e']]); c.fill(); c.strokeStyle = '#142c52'; c.lineWidth = 2; c.stroke();
+    rr(c, 0, 12, 420, 16, 5); c.fillStyle = '#e9e1d2'; c.fill(); c.strokeStyle = '#8a7a5a'; c.lineWidth = 1.6; c.stroke();
+    c.fillStyle = '#ffd23f'; c.fillRect(4, 48, 412, 5);
+    c.font = '700 14px Fredoka, system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#ffffff'; c.fillText('FACTORY SHOP · WHOLESALE', 210, 64);
+  });
+  tex(scene, 'm_office', 130, 110, 0.5, 0.88, (c) => {
+    shadow(c, 65, 94, 58, 10);
+    rr(c, 10, 46, 110, 20, 4); c.fillStyle = '#6e4520'; c.fill(); c.strokeStyle = '#3d220f'; c.lineWidth = 2; c.stroke();
+    c.fillStyle = '#5e3a1a'; c.fillRect(16, 66, 8, 28); c.fillRect(106, 66, 8, 28);
+    rr(c, 40, 14, 44, 32, 3); c.fillStyle = '#1d2a3a'; c.fill(); rr(c, 44, 18, 36, 24, 2); c.fillStyle = '#7ed3ff'; c.fill();
+    c.fillStyle = '#2bb34a'; for (let i = 0; i < 4; i++) c.fillRect(48 + i * 8, 36 - i * 4, 5, 4 + i * 4);
+    rr(c, 90, 32, 22, 14, 2); c.fillStyle = '#f2f2f2'; c.fill();
+    c.fillStyle = '#e33d3d'; rr(c, 14, 36, 18, 10, 2); c.fill();
+  });
+  tex(scene, 'm_madeinaba', 220, 230, 0.5, 0.96, (c) => {
+    shadow(c, 110, 218, 70, 9);
+    c.fillStyle = '#4b525b'; c.fillRect(54, 120, 10, 100); c.fillRect(156, 120, 10, 100);
+    c.strokeStyle = '#6b737b'; c.lineWidth = 3; for (let y = 130; y < 216; y += 22) { c.beginPath(); c.moveTo(64, y); c.lineTo(156, y + 18); c.moveTo(156, y); c.lineTo(64, y + 18); c.stroke(); }
+    rr(c, 6, 10, 208, 116, 10); c.fillStyle = lin(c, 0, 10, 0, 126, [[0, '#1b8b3a'], [1, '#0f5e26']]); c.fill(); c.strokeStyle = '#ffffff'; c.lineWidth = 4; c.stroke();
+    rr(c, 14, 18, 192, 100, 7); c.strokeStyle = '#ffd23f'; c.lineWidth = 2; c.stroke();
+    for (let i = 0; i < 9; i++) { c.beginPath(); c.arc(22 + i * 22, 10, 4, 0, 7); c.fillStyle = '#fff3b0'; c.fill(); }
+  });
+  // ---- trucks ----
+  const wheel = (c, x, y, r) => { c.beginPath(); c.arc(x, y, r, 0, 7); c.fillStyle = '#1a1a1a'; c.fill(); c.beginPath(); c.arc(x, y, r * 0.45, 0, 7); c.fillStyle = '#b8c0c8'; c.fill(); c.beginPath(); c.arc(x, y, r * 0.15, 0, 7); c.fillStyle = '#555'; c.fill(); };
+  const cab = (c, x, y, w, h, col, dark) => {
+    c.beginPath(); c.moveTo(x, y + 14); c.quadraticCurveTo(x + 2, y, x + 18, y); c.lineTo(x + w, y); c.lineTo(x + w, y + h); c.lineTo(x, y + h); c.closePath();
+    c.fillStyle = lin(c, 0, y, 0, y + h, [[0, col], [1, dark]]); c.fill(); c.strokeStyle = 'rgba(0,0,0,0.5)'; c.lineWidth = 2; c.stroke();
+    rr(c, x + 8, y + 8, w * 0.55, h * 0.36, 4); c.fillStyle = '#2c3e55'; c.fill();
+    c.fillStyle = 'rgba(255,255,255,0.3)'; c.beginPath(); c.moveTo(x + 12, y + 8 + h * 0.36); c.lineTo(x + 20, y + 8); c.lineTo(x + 26, y + 8); c.lineTo(x + 18, y + 8 + h * 0.36); c.closePath(); c.fill();
+    ell(c, x + 4, y + h * 0.62, 3.5, 5); fillStroke(c, '#fff8cc', 'rgba(0,0,0,0.4)', 1);
+  };
+  tex(scene, 'm_pickup', 230, 150, 0.5, 0.9, (c) => {
+    shadow(c, 115, 132, 104, 12, 0.25);
+    cab(c, 12, 46, 74, 72, '#ffffff', '#c9ced4');
+    rr(c, 86, 70, 132, 48, 4); c.fillStyle = lin(c, 0, 70, 0, 118, [[0, '#f2f2f2'], [1, '#b8c0c8']]); c.fill(); c.strokeStyle = '#4b525b'; c.lineWidth = 2; c.stroke();
+    c.fillStyle = '#e33d3d'; c.fillRect(86, 96, 132, 6);
+    drawCarton(c, 100, 50, 30, 22, '#ff7a1a'); drawCarton(c, 136, 54, 28, 18, '#2bb34a'); drawKeg(c, 172, 46, 20, 26);
+    wheel(c, 50, 120, 16); wheel(c, 180, 120, 16);
+  });
+  tex(scene, 'm_lorry', 310, 176, 0.5, 0.9, (c) => {
+    shadow(c, 155, 158, 144, 13, 0.25);
+    cab(c, 10, 64, 80, 84, '#2c7be5', '#1a4f99');
+    rr(c, 92, 14, 210, 134, 6); c.fillStyle = lin(c, 0, 14, 0, 148, [[0, '#ffffff'], [1, '#d6dadf']]); c.fill(); c.strokeStyle = '#4b525b'; c.lineWidth = 2.2; c.stroke();
+    c.fillStyle = '#ff7a1a'; c.fillRect(92, 108, 210, 10); c.fillStyle = '#2bb34a'; c.fillRect(92, 120, 210, 5);
+    text(c, 'CHOP FACTORY', 197, 62, 22, '#e8452c', 700, '#ffffff', 4);
+    text(c, 'Made in Aba', 197, 88, 14, '#1d2a3a', 600);
+    wheel(c, 48, 150, 18); wheel(c, 210, 150, 18); wheel(c, 260, 150, 18);
+  });
+  tex(scene, 'm_trailer', 360, 184, 0.5, 0.9, (c) => {
+    shadow(c, 180, 166, 170, 13, 0.25);
+    cab(c, 8, 70, 74, 88, '#e33d3d', '#a01e1e');
+    c.fillStyle = '#2a2e33'; c.fillRect(80, 140, 270, 8);
+    rr(c, 84, 10, 270, 132, 4); c.fillStyle = lin(c, 0, 10, 0, 142, [[0, '#2f9a55'], [1, '#1c6a38']]); c.fill(); c.strokeStyle = '#0f3e20'; c.lineWidth = 2.2; c.stroke();
+    c.strokeStyle = 'rgba(0,0,0,0.22)'; c.lineWidth = 2; for (let x = 96; x < 350; x += 14) { c.beginPath(); c.moveTo(x, 14); c.lineTo(x, 138); c.stroke(); }
+    rr(c, 130, 46, 180, 44, 6); c.fillStyle = 'rgba(255,255,255,0.92)'; c.fill();
+    text(c, 'MADE IN ABA', 220, 68, 20, '#1b8b3a', 700);
+    wheel(c, 44, 160, 18); wheel(c, 250, 160, 18); wheel(c, 292, 160, 18); wheel(c, 334, 160, 18);
+  });
+  // ---- floor and belt ----
+  tex(scene, 'g_concrete', 128, 128, 0, 0, (c) => {
+    c.fillStyle = '#c9cbc6'; c.fillRect(0, 0, 128, 128);
+    const r = (n) => { let a = n * 9301 + 49297; return () => { a = (a * 9301 + 49297) % 233280; return a / 233280; }; };
+    const rnd = r(7);
+    for (let i = 0; i < 90; i++) { c.fillStyle = `rgba(${rnd() < 0.5 ? '255,255,255' : '60,60,60'},${0.05 + rnd() * 0.06})`; c.fillRect(rnd() * 128, rnd() * 128, 2 + rnd() * 5, 2 + rnd() * 5); }
+    c.strokeStyle = 'rgba(80,80,80,0.18)'; c.lineWidth = 1.5; c.strokeRect(0, 0, 128, 128);
+  });
+  tex(scene, 'g_belt', 32, 32, 0, 0, (c) => {
+    c.fillStyle = '#2a2e33'; c.fillRect(0, 0, 32, 32);
+    c.fillStyle = '#3a4047'; c.fillRect(0, 2, 32, 12); c.fillRect(0, 18, 32, 12);
+    c.fillStyle = 'rgba(255,255,255,0.08)'; c.fillRect(0, 2, 32, 2); c.fillRect(0, 18, 32, 2);
   });
 }
 

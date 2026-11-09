@@ -574,7 +574,7 @@ export default class UIScene extends Phaser.Scene {
     const reopen = this.modal && this.modal.kind === 'map';
     this.reopening = reopen;
     this.openModal((card) => {
-      const w = Math.min(370, this.W - 20); const rowH = 158; const h = 84 + list.length * rowH + 20;
+      const w = Math.min(370, this.W - 20); const rowH = Math.max(134, Math.min(158, Math.floor((this.H - 120) / list.length))); const h = 84 + list.length * rowH + 20;
       this.card(card, w, h, 'Your Branches', 0x0f8b8d);
       this.closeX(card, w, h);
       list.forEach((br, i) => {
@@ -798,18 +798,21 @@ export default class UIScene extends Phaser.Scene {
   showFinished({ branch, stats }) {
     const stand = branch === 'stand';
     const lounge = branch === 'lounge';
-    const showMapBtn = branch !== 'lounge';
+    const factory = branch === 'factory';
+    const showMapBtn = branch !== 'lounge' && !factory;
     this.openModal((card) => {
       const w = Math.min(330, this.W - 32), h = 430;
-      this.card(card, w, h, stand ? 'The talk of Aba!' : lounge ? 'The finest spot in Aba!' : 'Ariaria is booming!', 0xff4fa3);
-      card.add(img(this, 0, -126, stand ? 'icon_sign' : lounge ? 'icon_fountain' : 'icon_bulb').setScale(0.5 * 1.2));
+      this.card(card, w, h, stand ? 'The talk of Aba!' : lounge ? 'The finest spot in Aba!' : factory ? 'Made in Aba!' : 'Ariaria is booming!', factory ? 0x1b8b3a : 0xff4fa3);
+      card.add(img(this, 0, -126, stand ? 'icon_sign' : lounge ? 'icon_fountain' : factory ? 'icon_factory' : 'icon_bulb').setScale(0.5 * 1.2));
       const msg = stand
         ? `${this.ownerTitle()} spot is now the most famous\npuff-puff & zobo spot on Faulks Road.\nOpen your next branch from the map!`
         : lounge
           ? 'GRA\'s most talked-about restaurant.\nBookings every night. Fame keeps\nrising. How far can you go?'
+          : factory
+            ? 'Your goods are in markets from Aba\nto Lagos and Kano. Now give back:\ntap the town hall to build up Aba.'
           : 'Every table is full, every night.\nFame keeps rising, and so do the\ncustomers. Your next branch is on the map!';
       card.add(this.txt(0, -50, msg, 14.5, 500, '#3a2a1a', { align: 'center' }).setOrigin(0.5));
-      const lines = [['Guests served', stats.served], [stand ? 'Shuttle orders' : lounge ? 'Party bookings' : 'Keke orders', stats.vehicles], ['Earned here', money(stats.earned)]];
+      const lines = [[factory ? 'Traders served' : 'Guests served', stats.served], [stand ? 'Shuttle orders' : lounge ? 'Party bookings' : factory ? 'Trucks loaded' : 'Keke orders', stats.vehicles], ['Earned here', money(stats.earned)]];
       lines.forEach(([k, v], i) => {
         const y = 14 + i * 28;
         card.add(this.txt(-w / 2 + 30, y, k, 15, 500, '#7a6450').setOrigin(0, 0.5));
@@ -820,7 +823,7 @@ export default class UIScene extends Phaser.Scene {
         const k = label(this, 0, h / 2 - 38, 'Keep cooking', { size: 16, color: '#7a6450', stroke: null, res: this.dpr * 1.5 });
         k.setInteractive({ useHandCursor: true }); k.on('pointerdown', () => this.closeModal());
         card.add(k);
-      } else this.bigButton(card, 0, h / 2 - 50, 'Keep cooking', 0x2bb34a, () => this.closeModal(), 210);
+      } else this.bigButton(card, 0, h / 2 - 50, factory ? 'Keep building' : 'Keep cooking', 0x2bb34a, () => this.closeModal(), 210);
     });
     const e = this.add.particles(0, -20, 'fx_conf', {
       x: { min: 0, max: this.W }, speedY: { min: 120, max: 260 }, speedX: { min: -40, max: 40 }, rotate: { min: 0, max: 360 },

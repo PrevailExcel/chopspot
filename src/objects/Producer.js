@@ -13,6 +13,12 @@ const KINDS = {
   noodles: { machine: 'm_noodle', holder: 'm_platetray', hx: 68, hy: 28, layout: 'plates', pdy: -6, fx: ['steam'], top: 122, emit: 58, rect: [-62, 102] },
   akara: { machine: 'm_akara', holder: 'm_basket', hx: 66, hy: 26, layout: 'basket', pdy: -6, fx: ['steam', 'sizzle'], top: 120, emit: 60, rect: [-62, 100] },
   oven: { machine: 'm_oven', holder: 'm_breadtray', hx: 66, hy: 28, layout: 'bread', pdy: -6, fx: ['smoke'], top: 136, emit: 50, rect: [-60, 100] },
+  // Chop Factory lines: the pallet of finished goods sits on the aisle side of the machine
+  oilpress: { machine: 'm_oilpress', holder: 'm_pallet', hx: 98, hy: 26, layout: 'pallet', pdy: -8, fx: ['drip'], top: 140, emit: 40, rect: [-68, 64], zx: 98 },
+  soapline: { machine: 'm_soapline', holder: 'm_pallet', hx: -98, hy: 26, layout: 'pallet', pdy: -8, fx: ['steam'], top: 140, emit: 80, rect: [-64, 68], zx: -98 },
+  shoebench: { machine: 'm_shoebench', holder: 'm_pallet', hx: 98, hy: 26, layout: 'pallet', pdy: -8, fx: [], top: 140, emit: 60, rect: [-68, 64], zx: 98 },
+  sewing: { machine: 'm_sewing', holder: 'm_pallet', hx: -98, hy: 26, layout: 'pallet', pdy: -8, fx: [], top: 140, emit: 60, rect: [-64, 68], zx: -98 },
+  bagline: { machine: 'm_bagline', holder: 'm_pallet', hx: 98, hy: 26, layout: 'pallet', pdy: -8, fx: [], top: 140, emit: 60, rect: [-68, 64], zx: 98 },
   fridge: { machine: 'm_fridge', holder: 'm_crate', hx: -66, hy: 28, layout: 'crate', pdy: -4, fx: [], top: 160, emit: 70, rect: [-100, 52], zx: -34 },
 };
 

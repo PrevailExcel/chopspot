@@ -15,6 +15,10 @@ const LAYOUTS = {
   bread: (i) => { const col = i % 3, layer = Math.floor(i / 3); return { x: (col - 1) * 18 + (layer % 2) * 5, y: -layer * 9 }; },
   // dirty plates left on a dining table
   tablePlates: (i) => { const col = i % 2, layer = Math.floor(i / 2); return { x: (col - 0.5) * 34, y: -layer * 5 }; },
+  // cartons stacked on a factory pallet: 3 across, layers going up
+  pallet: (i) => { const col = i % 3, layer = Math.floor(i / 3); return { x: (col - 1) * 24, y: -layer * 17 }; },
+  // a rack slot or shop shelf: 2 across
+  slot: (i) => { const col = i % 2, layer = Math.floor(i / 2); return { x: (col - 0.5) * 30, y: -layer * 14 }; },
   cashSmall: (i) => { const col = i % 2, layer = Math.floor(i / 2); return { x: (col - 0.5) * 30, y: -layer * 6 }; },
 };
 

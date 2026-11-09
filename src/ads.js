@@ -44,6 +44,11 @@ export const SLOTS = {
     { id: 'ariaria-left', x: 230, y: 1720, ads: ['vezio', 'house'] },
     { id: 'ariaria-right', x: 770, y: 1720, ads: ['house', 'vezio'] },
   ],
+  factory: [
+    { id: 'factory-main', x: 250, y: 1450, ads: ['vezio'] },
+    { id: 'factory-left', x: 230, y: 1720, ads: ['vezio', 'house'] },
+    { id: 'factory-right', x: 770, y: 1720, ads: ['house', 'vezio'] },
+  ],
 };
 
 // ---------------------------------------------------------------------------
