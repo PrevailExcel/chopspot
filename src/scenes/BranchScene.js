@@ -14,6 +14,7 @@ import { saveState, freshBranch, pendingNow, priceMult as basePrice, cashCap, pa
 import { lookFromProfile, possessive } from '../profile.js';
 import { prepareBranch } from '../lounge/loader.js';
 import { Cloud } from '../cloud.js';
+import { Portal } from '../portal.js';
 
 export const ADA_LOOK = {
   skin: 0x8d5a36, shirt: 0xff7a1a, pattern: 0x0f8b8d, pants: 0x2a3550, dress: true,
@@ -506,6 +507,7 @@ export default class BranchScene extends Phaser.Scene {
     this.gs.owned[key] = true;
     this.gs.branches[key] = freshBranch(key);
     Sound.play('unlock');
+    Portal.happy(); // a new branch is the big moment worth a portal celebration
     this.travel(key);
   }
 

@@ -1,6 +1,7 @@
 // Cloud save: phone number + 4-digit PIN, so progress survives a cleared browser and moves between phones.
 // The save with more lifetime earnings always wins. Server: /server/index.php. Turned on by VITE_SAVE_API.
 import { Store, DEMO } from './platform.js';
+import { ON_PORTAL } from './portal.js';
 
 const API = (import.meta.env.VITE_SAVE_API || '').replace(/\/$/, '');
 const ACCOUNT = 'chopspot.cloud';
@@ -26,7 +27,7 @@ async function post(route, body, { timeout = 8000, keepalive = false } = {}) {
 let lastPush = 0;
 
 export const Cloud = {
-  enabled: !!API && !DEMO,
+  enabled: !!API && !DEMO && !ON_PORTAL, // portals save through their own SDK
   get account() { return read(ACCOUNT); },
   get linked() { return this.enabled && !!(this.account && this.account.token); },
   progress(state) { return Math.floor((state && state.stats && state.stats.earned) || 0); },

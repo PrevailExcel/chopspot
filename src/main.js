@@ -4,6 +4,7 @@ import '@fontsource/fredoka/latin-600.css';
 import '@fontsource/fredoka/latin-700.css';
 import './install.js'; // must load first to catch the browser's install prompt
 import { Cloud } from './cloud.js';
+import { Portal, ON_PORTAL } from './portal.js';
 import BootScene from './scenes/BootScene.js';
 import StandScene from './scenes/StandScene.js';
 import BukaScene from './scenes/BukaScene.js';
@@ -23,8 +24,13 @@ async function start() {
       new Promise((r) => setTimeout(r, 2500)),
     ]);
   } catch (e) { /* fall back to system font */ }
-  // a cleared browser (or another phone) gets its progress back from the cloud before the game loads
-  await Promise.race([Cloud.pullOnStart(), new Promise((r) => setTimeout(r, 4000))]).catch(() => {});
+  if (ON_PORTAL) {
+    // the portal SDK must be ready before the save is read: saves live in its data module
+    await Portal.init();
+  } else {
+    // a cleared browser (or another phone) gets its progress back from the cloud before the game loads
+    await Promise.race([Cloud.pullOnStart(), new Promise((r) => setTimeout(r, 4000))]).catch(() => {});
+  }
 
   const { w, h } = size();
   const game = new Phaser.Game({

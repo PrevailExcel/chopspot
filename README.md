@@ -24,6 +24,23 @@ Or from your computer: `npx vercel` (preview) and `npx vercel --prod`.
 
 Link previews on WhatsApp and X use `public/og.png`. On Vercel its full address is filled in automatically. If you add a custom domain, set an environment variable `SITE_URL=https://yourdomain` in the Vercel project and redeploy.
 
+## Publish on CrazyGames
+
+```bash
+npm run build:crazygames   # -> dist-crazygames/ and chopspot-crazygames.zip
+```
+
+Upload `chopspot-crazygames.zip` at developer.crazygames.com. The portal build differs from the site (all in `src/portal.js`):
+
+- the CrazyGames SDK loads first; saves go through its data module, so they follow the player's CrazyGames account
+- billboards show made-up Aba shops (Nkechi Fabrics, Mmiri Table Water, Chuks Phones) with no links: portals only allow their own ads
+- no phone + PIN cloud save, no install prompts, no service worker
+- no title screen and no character screen on first start (players land in the game; Settings > Change character)
+- gameplay start/stop, loading start/stop and a celebration on buying a new branch are reported to CrazyGames
+- `Portal.midgame()` and `Portal.rewarded()` are ready for Full Launch, when CrazyGames turns ads on
+
+The site and the Android app don't change: without `VITE_PORTAL` none of this code is in their build.
+
 ## Getting players to install it
 
 The web build is an installable app (manifest + offline service worker via `vite-plugin-pwa`). Once installed it plays without data. The logic is in **`src/install.js`**:

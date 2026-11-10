@@ -10,6 +10,7 @@
 // - Asks are spaced out (at most MAX_ASKS, at least ASK_GAP_HOURS apart), and a small HUD button is always there.
 import { Capacitor } from '@capacitor/core';
 import { trackEvent } from './ads.js';
+import { ON_PORTAL } from './portal.js';
 
 export const INSTALL_BONUS = 1000;
 const MAX_ASKS = 4;
@@ -71,7 +72,7 @@ export const Install = {
 
   /** 'prompt' | 'ios' | 'inapp' | null: what kind of help we can offer on this device right now */
   get mode() {
-    if (native || standalone || framed || st.installed) return null;
+    if (ON_PORTAL || native || standalone || framed || st.installed) return null;
     if (inAppName) return 'inapp';
     if (deferred) return 'prompt';
     if (isIOS) return 'ios';
@@ -128,7 +129,7 @@ export const Install = {
 
   /** true once, the first time the game is opened from the home screen */
   claimBonus() {
-    if (!standalone || native || st.rewarded) return false;
+    if (ON_PORTAL || !standalone || native || st.rewarded) return false;
     st.rewarded = true; save();
     trackEvent('install_bonus', {});
     return true;

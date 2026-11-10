@@ -9,6 +9,7 @@ import { Install, INSTALL_BONUS } from '../install.js';
 import { PROJECTS, PROJECTS_SHOW_CASH } from '../config.js';
 import { projectCost, projectBonus, honour } from '../state.js';
 import { Cloud } from '../cloud.js';
+import { Portal, ON_PORTAL } from '../portal.js';
 
 const JOY_R = 58;
 let titleDone = false; // the title screen shows once per app launch, not on every branch trip
@@ -78,6 +79,8 @@ export default class UIScene extends Phaser.Scene {
     this.onHint(null, this.registry.get('hint') || '');
     this.onFame(null, this.registry.get('fame'));
     this.onGoals(null, this.registry.get('goals'));
+    // portals want new players in the game straight away, so there is no title screen there
+    if (!titleDone && ON_PORTAL) { titleDone = true; this.time.delayedCall(1500, () => this.game.events.emit('moment', 'start')); }
     if (!titleDone) this.showTitle();
     else if (!this.gameScene.gs.profile) this.showCreator();
     const wb = this.registry.get('welcome');
@@ -1185,6 +1188,7 @@ export default class UIScene extends Phaser.Scene {
   }
 
   update(_t, delta) {
+    if (ON_PORTAL) Portal.setPlaying(!this.modal && !this.titleOpen && !document.hidden);
     if (this.creatorRig && this.creatorRig.active) this.creatorRig.animate(delta / 1000, 0, 0);
     const target = this.targetCash ?? 0;
     if (Math.abs(target - this.shownCash) > 0.01) {

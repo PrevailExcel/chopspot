@@ -3,7 +3,10 @@
 // - A creative is either painted in code (`paint`) or an image you drop into public/ads/ (`image`, 1200x560 px).
 // - Tapping a board opens the advertiser's link. Views and taps are counted per ad (see `adStats()`), and are
 //   also posted to TRACK_URL if you set one, so you can show advertisers real numbers.
+// - On portal builds (CrazyGames etc.) only the portal's own ads are allowed, so the boards show made-up
+//   Aba shops instead (PORTAL_CREATIVES), nothing is counted and tapping a board opens nothing.
 import { paintTexture, roundRect, linearGrad, radialGrad, groundShadow, R } from './art.js';
+import { ON_PORTAL } from './portal.js';
 
 export const TRACK_URL = '';      // e.g. 'https://api.yoursite.ng/ad-events' (POST, JSON array). Empty = keep counts on the device only.
 export const BOOKING_URL = '';    // where "Your brand here" boards send people, e.g. 'https://wa.me/234XXXXXXXXXX?text=Billboard%20in%20Aba%20Chop%20Spot'
@@ -11,7 +14,7 @@ export const ROTATE_EVERY = 16;   // seconds a board shows one ad before flippin
 
 const UTM = 'utm_source=abachopspot&utm_medium=billboard&utm_campaign=launch';
 
-export const CREATIVES = {
+const SITE_CREATIVES = {
   vezio: {
     label: 'Vezio',
     url: `https://vezio.ng/?${UTM}`,
@@ -31,14 +34,27 @@ export const CREATIVES = {
   // shoprite: { label: 'Brand name', url: 'https://brand.ng', image: 'ads/brand.png' },
 };
 
+/** Shop signs for portal builds: scenery, not ads. Painted in code, no links. */
+const PORTAL_CREATIVES = {
+  fabrics: { label: 'Nkechi Fabrics', url: null, paint: paintFabrics },
+  water: { label: 'Mmiri Table Water', url: null, paint: paintWater },
+  phones: { label: 'Chuks Phones', url: null, paint: paintPhones },
+};
+const PORTAL_ROTATION = ['fabrics', 'water', 'phones'];
+/** each board gets two shops, offset so neighbouring boards don't match */
+let portalN = 0;
+const portalAds = () => { const i = portalN++ % PORTAL_ROTATION.length; return [PORTAL_ROTATION[i], PORTAL_ROTATION[(i + 1) % PORTAL_ROTATION.length]]; };
+
+export const CREATIVES = ON_PORTAL ? PORTAL_CREATIVES : SITE_CREATIVES;
+
 /** Boards per branch. x/y is where the legs stand. The main board sits on the street edge of the lot; the others are across the street. */
 /** screens inside the 3D GRA Lounge (facade screen faces the street, bar screen faces the dining room) */
-export const SCREENS = {
+const SITE_SCREENS = {
   'gra-facade': ['vezio', '2wise', 'house'],
   'gra-bar': ['2wise', 'vezio'],
 };
 
-export const SLOTS = {
+const SITE_SLOTS = {
   stand: [
     { id: 'faulks-main', x: 270, y: 1450, ads: ['vezio', '2wise'] },  // in view whenever you're at the counter
     { id: 'faulks-left', x: 230, y: 1720, ads: ['2wise', 'house'] },  // across the street
@@ -56,6 +72,13 @@ export const SLOTS = {
     { id: 'factory-right', x: 850, y: 1720, ads: ['house', 'vezio'] },
   ],
 };
+
+export const SCREENS = ON_PORTAL
+  ? Object.fromEntries(Object.keys(SITE_SCREENS).map((k) => [k, portalAds()]))
+  : SITE_SCREENS;
+export const SLOTS = ON_PORTAL
+  ? Object.fromEntries(Object.entries(SITE_SLOTS).map(([k, list]) => [k, list.map((slot) => ({ ...slot, ads: portalAds() }))]))
+  : SITE_SLOTS;
 
 // ---------------------------------------------------------------------------
 // Board geometry (world units)
@@ -147,6 +170,49 @@ function paintHouse(c, w, h) {
 }
 
 // ---------------------------------------------------------------------------
+// Made-up Aba shops for portal builds (no "Ad" tag: they are part of the street)
+
+const SIGN = 'Fredoka, system-ui, sans-serif';
+
+/** Nkechi Fabrics: Ankara-style dots and diamonds */
+function paintFabrics(c, w, h) {
+  c.fillStyle = '#7b2d8b'; c.fillRect(0, 0, w, h);
+  for (let y = 10; y < h; y += 28) {
+    for (let x = (y / 28) % 2 ? 14 : 0; x < w; x += 28) {
+      c.beginPath(); c.arc(x, y, 9, 0, Math.PI * 2); c.fillStyle = '#ffd23f'; c.fill();
+      c.beginPath(); c.arc(x, y, 4, 0, Math.PI * 2); c.fillStyle = '#e33d5c'; c.fill();
+    }
+  }
+  roundRect(c, 24, 26, w - 48, h - 52, 14); c.fillStyle = 'rgba(255,248,230,0.94)'; c.fill();
+  txt(c, 'Nkechi Fabrics', w / 2, 58, `700 28px ${SIGN}`, '#7b2d8b', 'center');
+  txt(c, 'Ankara · Lace · George', w / 2, 88, `600 14px ${SIGN}`, '#3a2a1a', 'center');
+}
+
+/** Mmiri Table Water: sachet water, ice cold */
+function paintWater(c, w, h) {
+  c.fillStyle = linearGrad(c, 0, 0, 0, h, [[0, '#5ec8f2'], [1, '#1f7fc4']]); c.fillRect(0, 0, w, h);
+  c.fillStyle = 'rgba(255,255,255,0.22)';
+  for (const [x, y, r] of [[40, 30, 10], [270, 40, 14], [250, 110, 8], [60, 112, 12], [150, 20, 6]]) { c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill(); }
+  // sachet
+  roundRect(c, 30, 36, 64, 74, 10); c.fillStyle = 'rgba(255,255,255,0.85)'; c.fill();
+  roundRect(c, 40, 54, 44, 30, 6); c.fillStyle = '#1f7fc4'; c.fill();
+  txt(c, 'MMIRI', 62, 69.5, `700 11px ${SIGN}`, '#ffffff', 'center');
+  txt(c, 'Mmiri Table Water', 108, 58, `700 22px ${SIGN}`, '#ffffff');
+  txt(c, 'Ice cold. Every junction.', 108, 88, `600 13px ${SIGN}`, '#e6f6ff');
+}
+
+/** Chuks Phones: repairs and accessories */
+function paintPhones(c, w, h) {
+  c.fillStyle = linearGrad(c, 0, 0, w, h, [[0, '#ff9a1a'], [1, '#e8452c']]); c.fillRect(0, 0, w, h);
+  // phone
+  roundRect(c, 34, 22, 56, 96, 10); c.fillStyle = '#1e1e24'; c.fill();
+  roundRect(c, 40, 32, 44, 72, 4); c.fillStyle = '#5ec8f2'; c.fill();
+  c.beginPath(); c.arc(62, 111, 3, 0, Math.PI * 2); c.fillStyle = '#5a5a66'; c.fill();
+  txt(c, 'Chuks Phones', 108, 56, `700 26px ${SIGN}`, '#ffffff');
+  txt(c, 'Repairs · Chargers · Cases', 108, 86, `600 13px ${SIGN}`, '#fff6e0');
+}
+
+// ---------------------------------------------------------------------------
 // Counting views and taps
 
 const STATS_KEY = 'abachop.ads';
@@ -161,6 +227,7 @@ function loadStats() {
 function saveStats() { try { localStorage.setItem(STATS_KEY, JSON.stringify(stats)); } catch (e) { /* private mode */ } }
 
 export function trackAd(type, adId, slotId) {
+  if (ON_PORTAL) return; // made-up shops: nothing to count
   const s = loadStats();
   const bucket = type === 'tap' ? s.taps : s.views;
   bucket[adId] = (bucket[adId] || 0) + 1;
@@ -248,6 +315,7 @@ export class Billboard {
   tap() {
     const ui = this.scene.scene.get('UI');
     if (ui && (ui.modal || ui.titleOpen)) return;
+    if (ON_PORTAL) { this.scene.tweens.add({ targets: [this.face], alpha: 0.75, duration: 80, yoyo: true }); return; }
     const id = this.adId; const ad = CREATIVES[id];
     trackAd('tap', id, this.slot.id);
     this.scene.tweens.add({ targets: [this.face], alpha: 0.6, duration: 80, yoyo: true });

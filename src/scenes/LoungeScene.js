@@ -5,6 +5,7 @@ import { Sound } from '../audio.js';
 import { Haptic, DEMO } from '../platform.js';
 import { getEngine } from '../lounge/loader.js';
 import { CREATIVES, SCREENS, ROTATE_EVERY, BOOKING_URL, trackAd } from '../ads.js';
+import { ON_PORTAL } from '../portal.js';
 import { lookFromProfile } from '../profile.js';
 import BranchScene from './BranchScene.js';
 
@@ -301,7 +302,7 @@ export default class LoungeScene extends BranchScene {
   // ===================================================================
   // ad screens in the world (same advertisers as the billboards)
   setupScreens() {
-    this.screens = this.world.adScreens.map((s) => ({ ...s, ads: (SCREENS[s.slotId] || ['vezio']).filter((id) => CREATIVES[id]), idx: 0, t: 0, seen: false }));
+    this.screens = this.world.adScreens.map((s) => ({ ...s, ads: (SCREENS[s.slotId] || []).filter((id) => CREATIVES[id]), idx: 0, t: 0, seen: false }));
     this.screens.forEach((s) => this.showAd(s));
   }
   showAd(s) {
@@ -334,7 +335,7 @@ export default class LoungeScene extends BranchScene {
       const hit = this.ctx.view.raycast(p.x / dpr, p.y / dpr, this.screens.map((s) => s.face));
       if (!hit) { const g = this.ctx.view.groundPoint(p.x / dpr, p.y / dpr); if (g) this.walkTo(g.x / U, g.z / U); return; }
       const s = this.screens.find((x) => x.face === hit.object);
-      if (!s) return;
+      if (!s || ON_PORTAL) return; // portal builds: the screens show made-up shops with no links
       const id = s.ads[s.idx]; const ad = CREATIVES[id];
       trackAd('tap', id, s.slotId);
       const url = ad.url || BOOKING_URL;

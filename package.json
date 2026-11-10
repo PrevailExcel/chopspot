@@ -9,7 +9,8 @@
     "preview": "vite preview --host",
     "cap:add": "cap add android",
     "cap:sync": "npm run build && cap sync",
-    "build:single": "vite build --mode single"
+    "build:single": "vite build --mode single",
+    "build:crazygames": "vite build --mode crazygames && node scripts/zip-portal.js crazygames"
   },
   "dependencies": {
     "@capacitor/core": "^6.1.2",

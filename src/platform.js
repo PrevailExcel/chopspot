@@ -1,6 +1,7 @@
 // Haptics (Capacitor native, falling back to the Vibration API) and save storage.
 import { Capacitor } from '@capacitor/core';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
+import { Portal } from './portal.js';
 
 const native = Capacitor.isNativePlatform();
 let hapticsOn = true;
@@ -43,22 +44,24 @@ function demoSave(real) {
 }
 
 // Storage can be unavailable (private mode, sandboxed previews); the game must still run.
+// On a portal build the save goes to the portal's data module, which backs it up to the player's account.
+const disk = () => Portal.storage || localStorage;
 let memoryFallback = null;
 let demoState = null;
 export const Store = {
   load() {
     let real = null;
-    try { const raw = localStorage.getItem(KEY); real = raw ? JSON.parse(raw) : null; } catch (e) { real = memoryFallback; }
+    try { const raw = disk().getItem(KEY); real = raw ? JSON.parse(raw) : null; } catch (e) { real = memoryFallback; }
     if (DEMO === 'gra' || DEMO === 'factory') return demoState || (demoState = demoSave(real));
     return real;
   },
   save(data) {
     if (DEMO) { demoState = data; return; }
-    try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) { memoryFallback = data; }
+    try { disk().setItem(KEY, JSON.stringify(data)); } catch (e) { memoryFallback = data; }
   },
   clear() {
     if (DEMO) { demoState = null; return; } // never wipe the real save from a demo visit
-    try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ }
+    try { disk().removeItem(KEY); } catch (e) { /* ignore */ }
     memoryFallback = null;
   },
 };
