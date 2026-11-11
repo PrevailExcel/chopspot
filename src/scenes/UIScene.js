@@ -9,7 +9,7 @@ import { Install, INSTALL_BONUS } from '../install.js';
 import { PROJECTS, PROJECTS_SHOW_CASH } from '../config.js';
 import { projectCost, projectBonus, honour } from '../state.js';
 import { Cloud } from '../cloud.js';
-import { Portal, ON_PORTAL } from '../portal.js';
+import { Portal, ON_PORTAL, PORTAL } from '../portal.js';
 
 const JOY_R = 58;
 let titleDone = false; // the title screen shows once per app launch, not on every branch trip
@@ -79,8 +79,9 @@ export default class UIScene extends Phaser.Scene {
     this.onHint(null, this.registry.get('hint') || '');
     this.onFame(null, this.registry.get('fame'));
     this.onGoals(null, this.registry.get('goals'));
-    // portals want new players in the game straight away, so there is no title screen there
-    if (!titleDone && ON_PORTAL) { titleDone = true; this.time.delayedCall(1500, () => this.game.events.emit('moment', 'start')); }
+    // CrazyGames wants new players in the game straight away, so there is no title screen there.
+    // GameDistribution keeps it: its first ad has to follow a tap, and PLAY is that tap.
+    if (!titleDone && PORTAL === 'crazygames') { titleDone = true; this.time.delayedCall(1500, () => this.game.events.emit('moment', 'start')); }
     if (!titleDone) this.showTitle();
     else if (!this.gameScene.gs.profile) this.showCreator();
     const wb = this.registry.get('welcome');
@@ -624,7 +625,7 @@ export default class UIScene extends Phaser.Scene {
         if (br.manager) {
           this.bigButton(card, w / 2 - 26 - bw * 1.5 - 8, midY, 'Collect', br.pending > 0 ? 0x2bb34a : 0xc9b99c, () => this.game.events.emit('collect-branch', br.key), bw, 40, 16);
         }
-        this.bigButton(card, w / 2 - 26 - bw / 2, midY, 'Go there', 0x0f8b8d, () => { this.closeModal(true); this.game.events.emit('travel', br.key); }, bw, 40, 16);
+        this.bigButton(card, w / 2 - 26 - bw / 2, midY, 'Go there', 0x0f8b8d, () => { this.closeModal(true); Portal.midgame().then(() => this.game.events.emit('travel', br.key)); }, bw, 40, 16);
       });
     }, 'map');
     this.reopening = false;
@@ -720,6 +721,7 @@ export default class UIScene extends Phaser.Scene {
       if (!this.titleOpen) return;
       this.titleOpen = false; titleDone = true;
       Sound.unlock();
+      Portal.preroll(); // GameDistribution's first ad; the SDK pauses the game while it plays
       Haptic.tap('medium');
       this.scene.resume(this.registry.get('active'));
       if (Install.claimBonus()) this.time.delayedCall(250, () => this.showInstallBonus());

@@ -44,6 +44,7 @@ async function start() {
     scene: [BootScene, StandScene, BukaScene, LoungeScene, FactoryScene, UIScene],
   });
   game.registry.set('dpr', dpr);
+  Portal.attach(game);
   const lift = () => { if (game.canvas) { game.canvas.style.position = 'relative'; game.canvas.style.zIndex = '1'; } };
   lift(); game.events.once('ready', lift);
 

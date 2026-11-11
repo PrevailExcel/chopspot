@@ -41,6 +41,17 @@ Upload `chopspot-crazygames.zip` at developer.crazygames.com. The portal build d
 
 The site and the Android app don't change: without `VITE_PORTAL` none of this code is in their build.
 
+## Publish on GameDistribution
+
+1. On gamedistribution.com, create the game in your developer dashboard and copy its Game ID.
+2. Put it in `.env.gamedistribution` (`VITE_GD_GAME_ID=...`), then:
+
+```bash
+npm run build:gamedistribution   # -> chopspot-gamedistribution.zip
+```
+
+Same portal changes as CrazyGames, except the title screen stays (GameDistribution's first ad must follow a tap, so it plays when PLAY is tapped), saves stay in localStorage, and an ad can play when the player taps "Go there" to travel to another branch. The SDK pauses and mutes the game while an ad is on screen.
+
 ## Getting players to install it
 
 The web build is an installable app (manifest + offline service worker via `vite-plugin-pwa`). Once installed it plays without data. The logic is in **`src/install.js`**:

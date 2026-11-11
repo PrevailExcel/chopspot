@@ -5,6 +5,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 // `npm run build`         -> dist/ for Capacitor (Android/iOS)
 // `npm run build:single`  -> dist-single/index.html, one self-contained playable file
 // `npm run build:crazygames` -> dist-crazygames/ + chopspot-crazygames.zip to upload (see src/portal.js)
+// `npm run build:gamedistribution` -> dist-gamedistribution/ + chopspot-gamedistribution.zip
 // Link previews (WhatsApp, X) need the full address of og.png. On Vercel it is filled in automatically;
 // elsewhere set SITE_URL, e.g. SITE_URL=https://abachopspot.ng npm run build
 const SITE_URL = (process.env.SITE_URL
@@ -50,7 +51,7 @@ const pwa = VitePWA({
 
 // Portal builds run inside the portal's page: no service worker, no install manifest, no share-link tags
 // (those use absolute paths, which portals don't allow).
-const PORTALS = ['crazygames'];
+const PORTALS = ['crazygames', 'gamedistribution'];
 const portalHtml = {
   name: 'portal-html',
   transformIndexHtml: (html) => html

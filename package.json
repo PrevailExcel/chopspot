@@ -10,7 +10,8 @@
     "cap:add": "cap add android",
     "cap:sync": "npm run build && cap sync",
     "build:single": "vite build --mode single",
-    "build:crazygames": "vite build --mode crazygames && node scripts/zip-portal.js crazygames"
+    "build:crazygames": "vite build --mode crazygames && node scripts/zip-portal.js crazygames",
+    "build:gamedistribution": "vite build --mode gamedistribution && node scripts/zip-portal.js gamedistribution"
   },
   "dependencies": {
     "@capacitor/core": "^6.1.2",
